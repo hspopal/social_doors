@@ -1,0 +1,231 @@
+---
+title: "Social Doors RSA"
+author: "Haroon Popal"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    number_sections: true
+    toc: true
+    toc_float: 
+      collapsed: false
+    toc_depth: 2
+    df_print: paged
+    css: !expr here::here("./style_srk_behavioral.css")
+    knit: (function(inputFile, encoding) { 
+      out_dir <- './';
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=file.path(dirname(inputFile), out_dir, 'index.html')) })
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+require("knitr")
+opts_knit$set(root.dir = "~/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/rsa-bw_runs/")
+```
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(ggpubr)
+```
+
+
+
+
+# ROI to ROI correlation
+```{r}
+roi_sim_region06 <- read.csv(file='roi_region06_similarity.csv', header = TRUE)
+roi_sim_sdorsalp <- read.csv(file='roi_striatum_dorsalp_similarity.csv', header = TRUE)
+```
+
+
+Combine data
+```{r}
+roi_roi_sim <- data.frame(colnames=c('subj','group','task','target','roi','r'))
+roi_sim_region06$target <- 'region06'
+roi_sim_sdorsalp$target <- 'striatum_dorsalp'
+
+roi_roi_sim <- rbind(roi_sim_region06, roi_sim_sdorsalp)
+```
+
+Remove autocorrelations
+```{r}
+roi_roi_sim <- roi_roi_sim[(roi_roi_sim$r != 1), ]
+
+```
+
+
+## Filter for ROIs
+```{r}
+hyp_rois <- c('TPJ_b-social','ATL_b-social','PCC_b-social','AMG_r-social','dmPFC_b-social',
+              'vmPFC_b-reward',
+              'region08','region02',
+              'striatum_ventral','striatum_dorsalp','striatum_dorsala')
+hyp_rois_names <- c('TPJ','ATL','PCC','AMG (r)',' dmPFC', 'vmPFC',
+                    'CB Region 8','CB Region 2',
+                    'Ventral Striatum','Posterior Dorsal \n Striatum',
+                    'Anterior Dorsal \n Striatum')
+
+roi_roi_sim_roi <- roi_roi_sim[roi_roi_sim$roi %in% hyp_rois, ]
+
+```
+
+## Filter for Task
+```{r}
+roi_roi_sim_roi_mdoors <- roi_roi_sim_roi[roi_roi_sim_roi$task %in% 'mdoors', ]
+roi_roi_sim_roi_social <- roi_roi_sim_roi[roi_roi_sim_roi$task %in% 'social', ]
+
+```
+
+
+# Monetary
+
+## ANOVA
+```{r}
+anova_mod_mdoors <- aov(r ~ target*roi, data=roi_roi_sim_roi_mdoors)
+summary(anova_mod_mdoors)
+```
+
+
+## One-Sample T-Tests
+```{r}
+roi_roi_sim_cb6_mdoors <- roi_roi_sim_roi_mdoors[(roi_roi_sim_roi_mdoors$target == 'region06'), ]
+roi_roi_sim_sdp_mdoors <- roi_roi_sim_roi_mdoors[(roi_roi_sim_roi_mdoors$target == 'striatum_dorsalp'), ]
+
+```
+
+```{r}
+conduct_ttests <- function(raw_df, targ_roi) {
+  ttest_df <- data.frame(matrix(ncol=7,nrow=0))
+  colnames(ttest_df) <- c('roi','t_stat','p','estimate','CI_l','CI_h','df')
+  
+  roi_list <- hyp_rois[!hyp_rois %in% targ_roi]
+  
+  row_n = 1
+  for (roi in roi_list) {
+    # Filter for ROI data
+    roi_data <- raw_df[raw_df$roi %in% roi, ]
+    
+    # Calculate t-test
+    temp_ttest <- t.test(roi_data$r, mu=0)
+    
+    # Fill in dataframe
+    ttest_df[row_n,] <- c(roi,
+                          temp_ttest$statistic,
+                          temp_ttest$p.value,
+                          temp_ttest$estimate, 
+                          temp_ttest$conf.int[1],
+                          temp_ttest$conf.int[2],
+                          temp_ttest$parameter[[1]])
+    
+    row_n = row_n+1
+  }
+  
+  ttest_df$p_adjust <- p.adjust(ttest_df$p, method='fdr')
+  
+  return(ttest_df)
+}
+```
+
+
+```{r}
+all_sim_cb6_mdoors_rois.ttests <- conduct_ttests(roi_roi_sim_cb6_mdoors, 'region08')
+all_sim_sdp_mdoors_rois.ttests <- conduct_ttests(roi_roi_sim_sdp_mdoors, 'striatum_dorsalp')
+
+```
+
+
+
+
+```{r}
+ggplot(roi_roi_sim_roi_mdoors, aes(x=roi, y=r, fill=target)) + 
+  #stat_summary(fun.data=mean_sdl, geom='bar', position=position_dodge()) + 
+  geom_bar(stat = 'summary', position=position_dodge()) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```
+
+
+
+
+
+# Social
+
+## ANOVA
+```{r}
+anova_mod_social <- aov(r ~ target*roi, data=roi_roi_sim_roi_social)
+summary(anova_mod_social)
+```
+
+
+## One-Sample T-Tests
+```{r}
+roi_roi_sim_cb6_social <- roi_roi_sim_roi_social[(roi_roi_sim_roi_social$target == 'region06'), ]
+roi_roi_sim_sdp_social <- roi_roi_sim_roi_social[(roi_roi_sim_roi_social$target == 'striatum_dorsalp'), ]
+
+```
+
+```{r}
+conduct_ttests <- function(raw_df, targ_roi) {
+  ttest_df <- data.frame(matrix(ncol=7,nrow=0))
+  colnames(ttest_df) <- c('roi','t_stat','p','estimate','CI_l','CI_h','df')
+  
+  roi_list <- hyp_rois[!hyp_rois %in% targ_roi]
+  
+  row_n = 1
+  for (roi in roi_list) {
+    # Filter for ROI data
+    roi_data <- raw_df[raw_df$roi %in% roi, ]
+    
+    # Calculate t-test
+    temp_ttest <- t.test(roi_data$r, mu=0)
+    
+    # Fill in dataframe
+    ttest_df[row_n,] <- c(roi,
+                          temp_ttest$statistic,
+                          temp_ttest$p.value,
+                          temp_ttest$estimate, 
+                          temp_ttest$conf.int[1],
+                          temp_ttest$conf.int[2],
+                          temp_ttest$parameter[[1]])
+    
+    row_n = row_n+1
+  }
+  
+  ttest_df$p_adjust <- p.adjust(ttest_df$p, method='fdr')
+  
+  return(ttest_df)
+}
+```
+
+
+```{r}
+all_sim_cb6_social_rois.ttests <- conduct_ttests(roi_roi_sim_cb6_social, 'region06')
+all_sim_sdp_social_rois.ttests <- conduct_ttests(roi_roi_sim_sdp_social, 'striatum_dorsalp')
+
+```
+
+```{r}
+stats <- compare_means(r ~ target, , data = roi_roi_sim_roi_social, method = "ttest",
+                       p.adjust.method = 'bonferroni')
+stats
+```
+
+
+
+```{r}
+ggplot(roi_roi_sim_roi_social, aes(x=roi, y=r, fill=target)) + 
+  #stat_summary(fun.data=mean_sdl, geom='bar', position=position_dodge()) + 
+  geom_bar(stat = 'summary', position=position_dodge()) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```

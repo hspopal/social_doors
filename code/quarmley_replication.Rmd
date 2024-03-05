@@ -1,0 +1,242 @@
+---
+title: "Quarmley Replication"
+author: "Haroon Popal"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: 
+      collapsed: false
+    df_print: paged
+    css: !expr here::here("./style_srk_behavioral.css")
+knit: (function(inputFile, encoding) { 
+      out_dir <- './';
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=file.path(dirname(inputFile), out_dir, 'srk_imaging_summary.html')) })
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+require("knitr")
+opts_knit$set(root.dir = "/Users/tuk12127/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/quarmley_replication/")
+```
+
+
+```{r}
+work_dir <- "/Users/tuk12127/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/quarmley_replication/"
+```
+
+
+
+```{r}
+participants <- read.table(file='../participants_good.tsv', sep = '\t', header = TRUE)
+participants
+```
+
+
+```{r}
+participants_kids <- participants[participants$group == 'kid', ]
+participants_kids <- participants_kids$participant_id
+
+# Remove certain participants because of poor data quality
+participants_kids <- participants_kids[participants_kids != 'sub-011']
+participants_kids <- participants_kids[participants_kids != 'sub-024']
+participants_kids <- participants_kids[participants_kids != 'sub-5049']
+
+
+participants_kids
+```
+
+
+```{r}
+VS_l_data <- data.frame(matrix(ncol = 4, nrow = 0))
+#colnames(VS_l_data) <- c('mdoors_positive_win', 'mdoors_positive_loss', 
+#                         'mdoors_negative_win', 'mdoors_negative_loss',
+#                         'social_positive_win', 'social_positive_loss', 
+#                         'social_negative_win', 'social_negative_loss')
+colnames(VS_l_data) <- c('Domain', 'Valence', 'Outcome', 'Beta')
+
+VS_r_data <- data.frame(matrix(ncol = 4, nrow = 0))
+#colnames(VS_r_data) <- c('mdoors_positive_win', 'mdoors_positive_loss', 
+#                         'mdoors_negative_win', 'mdoors_negative_loss',
+#                         'social_positive_win', 'social_positive_loss', 
+#                         'social_negative_win', 'social_negative_loss')
+colnames(VS_r_data) <- c('Domain', 'Valence', 'Outcome', 'Beta')
+
+```
+
+
+```{r}
+#domain_names <- c(rep('mdoors', 4), rep('social',4))
+#valence_names <- c('positive','positive','negative','negative',
+#                   'positive','positive','negative','negative')
+#outcome_names <- c('win','loss','win','loss','win','loss','win','loss')
+
+create_roi_matrix <- function(){
+  data_mtx <- data.frame(matrix(ncol = 5, nrow = 8*length(participants_kids)))
+  
+  colnames(data_mtx) <- c('Subject_ID', 'Domain', 'Valence', 'Outcome', 'Beta')
+  
+  domain_names <- c(rep('mdoors', 4), rep('social',4))
+  valence_names <- c('positive','positive','negative','negative',
+                     'positive','positive','negative','negative')
+  outcome_names <- c('win','loss','win','loss','win','loss','win','loss')
+  
+  data_mtx$Subject_ID <- rep(participants_kids, each=8)
+  data_mtx$Domain <- rep(domain_names, length(participants_kids))
+  data_mtx$Valence <- rep(valence_names, length(participants_kids))
+  data_mtx$Outcome <- rep(outcome_names, length(participants_kids))
+  
+  return(data_mtx)
+
+}
+```
+
+
+
+```{r}
+VS_l_data <- create_roi_matrix()
+VS_r_data <- create_roi_matrix()
+
+for (subj in participants_kids) {
+  if (file.exists(paste(work_dir, 'roi_mean_betas_', subj, '_mdoors.csv',
+                             sep = ''))) {
+    temp_subj_data <- read.csv(paste(work_dir, 'roi_mean_betas_', subj, '_mdoors.csv',
+                               sep = ''), row.names = 1)
+    
+    
+    VS_l_data[VS_l_data$Subject_ID == subj & VS_l_data$Domain == 'mdoors','Beta'] <- temp_subj_data$VS_L
+    VS_r_data[VS_r_data$Subject_ID == subj & VS_r_data$Domain == 'mdoors','Beta'] <- temp_subj_data$VS_R
+  }
+  
+  if (file.exists(paste(work_dir, 'roi_mean_betas_', subj, '_social.csv',
+                             sep = ''))) {
+    temp_subj_data <- read.csv(paste(work_dir, 'roi_mean_betas_', subj, '_social.csv',
+                               sep = ''), row.names = 1)
+    
+    
+    VS_l_data[VS_l_data$Subject_ID == subj & VS_l_data$Domain == 'social','Beta'] <- temp_subj_data$VS_L
+    VS_r_data[VS_r_data$Subject_ID == subj & VS_r_data$Domain == 'social','Beta'] <- temp_subj_data$VS_R
+  }
+}
+```
+
+
+Remove subjects with no data
+```{r}
+VS_l_data <- VS_l_data[complete.cases(VS_l_data),]
+VS_r_data <- VS_r_data[complete.cases(VS_r_data),]
+```
+
+
+
+
+# ANOVA
+
+```{r}
+anova_mod <- aov(Beta ~ Domain*Valence*Outcome, data=VS_l_data)
+summary(anova_mod)
+```
+
+
+```{r}
+correct_df <- VS_l_data[VS_l_data$Outcome == 'win',]
+
+interaction.plot(x.factor = correct_df$Domain,
+                 trace.factor = correct_df$Valence,
+                 response = correct_df$Beta,
+                 fun = mean)
+```
+
+```{r}
+incorrect_df <- VS_l_data[VS_l_data$Outcome == 'loss',]
+
+interaction.plot(x.factor = incorrect_df$Domain,
+                 trace.factor = incorrect_df$Valence,
+                 response = incorrect_df$Beta,
+                 fun = mean)
+```
+
+
+```{r}
+library(tidyverse)
+library(haven)
+library(psych)
+library(reghelper)
+library(sjPlot)
+```
+
+
+```{r}
+cl5_m11_ss <- simple_slopes(ancova_mod)
+cl5_m11_ss
+```
+
+
+
+```{r}
+cell.means <- matrix(with(VS_l_data,
+                          tapply(Beta, interaction(Valence, Domain), mean)))
+cell.means
+```
+
+
+
+
+
+
+
+# Use Megan's data
+```{r}
+library('readxl')
+library(dplyr)
+library(stringr)
+```
+
+
+```{r}
+full_data <- read_excel('../../misc/aggregate_full_data_SPSS_020419.xlsx')
+full_data
+```
+
+
+
+
+
+```{r}
+full_data$Subject <- gsub('s', 'sub-', full_data$Subject)
+full_data
+```
+
+
+```{r}
+VS_l_data$ch_totanx <- NA
+VS_l_data$ch_cdi_total <- NA
+
+for (subj in unique(VS_l_data$Subject_ID)) {
+  VS_l_data[VS_l_data$Subject_ID == subj, ]$ch_totanx <- full_data[full_data$Subject == subj,]$ch_totanx
+  VS_l_data[VS_l_data$Subject_ID == subj, ]$ch_cdi_total <- full_data[full_data$Subject == subj,]$ch_cdi_total
+}
+```
+
+
+```{r}
+ancova_mod <- aov(Beta ~ Domain*Valence*Outcome*ch_totanx*ch_cdi_total, data=VS_l_data)
+anova(ancova_mod)
+```
+
+
+```{r}
+ancova_mod <- lm(Beta ~ Domain*Valence*Outcome*ch_totanx*ch_cdi_total, data=VS_l_data)
+summary(ancova_mod)
+```
+
+
+
+
+

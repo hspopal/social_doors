@@ -1,0 +1,440 @@
+---
+title: "Univariate ROI Analysis"
+author: "Haroon Popal"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: 
+      collapsed: false
+    df_print: paged
+    css: !expr here::here("./style_srk_behavioral.css")
+knit: (function(inputFile, encoding) { 
+      out_dir <- './';
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=file.path(dirname(inputFile), out_dir, 'srk_imaging_summary.html')) })
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+opts_knit$set(root.dir = "/Users/tuk12127/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/univariate_roi/")
+```
+
+
+```{r}
+work_dir <- "/Users/tuk12127/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/univariate_roi/"
+```
+
+```{r}
+library(psych)
+```
+
+
+
+
+
+
+```{r}
+participants <- read.table(file='../derivatives/participants_good.tsv', sep = '\t', header = TRUE)
+participants
+```
+
+
+
+```{r}
+all_sub_roi_betas <- read.csv('../derivatives/univariate_roi/all_sub_roi_betas.csv')
+all_sub_roi_betas$subject_id <- all_sub_roi_betas$subj
+#all_sub_roi_betas <- subset(all_sub_roi_betas, select = -c(subj))
+
+# Use "adult as group label
+all_sub_roi_betas$group[all_sub_roi_betas$group == 'control'] <- 'college'
+
+
+all_sub_roi_betas
+
+```
+
+
+# General ROI Response
+Does the ROI activate for a given condition?
+
+## Monetary condition - general feedback response
+
+Create data subset for group and task
+```{r}
+adole_mdoors_data <- all_sub_roi_betas[(all_sub_roi_betas$group == 'kid') & (all_sub_roi_betas$task == 'mdoors'), ]
+adult_mdoors_data <- all_sub_roi_betas[(all_sub_roi_betas$group == 'college') & (all_sub_roi_betas$task == 'mdoors'), ]
+```
+
+
+Create data subset for ROI
+### Left VS - rlearn
+```{r}
+adole_mdoors_data_VS_l_rlearn <- subset(adole_mdoors_data, adole_mdoors_data$roi == 'VS_l-rlearn')
+adult_mdoors_data_VS_l_rlearn <- subset(adult_mdoors_data, adult_mdoors_data$roi == 'VS_l-rlearn')
+```
+
+## T-Test
+```{r}
+win_data <- subset(adole_mdoors_data_VS_l_rlearn, adole_mdoors_data_VS_l_rlearn$outcome == 'win')
+t.test(win_data$beta_mean, mu=0)
+```
+
+```{r}
+win_data <- subset(adult_mdoors_data_VS_l_rlearn, adult_mdoors_data_VS_l_rlearn$outcome == 'win')
+t.test(win_data$beta_mean, mu=0)
+```
+
+### Right Crus I - rlearn
+```{r}
+adole_mdoors_data_c1_r_rlearn <- subset(adole_mdoors_data, adole_mdoors_data$roi == 'region06-social')
+adult_mdoors_data_c1_r_rlearn <- subset(adult_mdoors_data, adult_mdoors_data$roi == 'region06-social')
+```
+
+## T-Test
+```{r}
+win_data <- subset(adole_mdoors_data_c1_r_rlearn, adole_mdoors_data_c1_r_rlearn$outcome == 'win')
+t.test(win_data$beta_mean, mu=0)
+```
+
+```{r}
+win_data <- subset(adult_mdoors_data_c1_r_rlearn, adult_mdoors_data_c1_r_rlearn$outcome == 'win')
+t.test(win_data$beta_mean, mu=0)
+```
+
+
+## Monetary condition - general feedback response
+
+Create data subset for group and task
+```{r}
+adole_social_data <- all_sub_roi_betas[(all_sub_roi_betas$group == 'kid') & (all_sub_roi_betas$task == 'social'), ]
+adult_social_data <- all_sub_roi_betas[(all_sub_roi_betas$group == 'college') & (all_sub_roi_betas$task == 'social'), ]
+```
+
+
+Create data subset for ROI
+### Left VS - rlearn
+```{r}
+adole_social_data_VS_l_rlearn <- subset(adole_social_data, adole_social_data$roi == 'VS_l-rlearn')
+adult_social_data_VS_l_rlearn <- subset(adult_social_data, adult_social_data$roi == 'VS_l-rlearn')
+```
+
+## T-Test
+```{r}
+win_data <- subset(adole_social_data_VS_l_rlearn, adole_social_data_VS_l_rlearn$outcome == 'win')
+t.test(win_data$beta_mean, mu=0)
+```
+
+```{r}
+win_data <- subset(adult_social_data_VS_l_rlearn, adult_social_data_VS_l_rlearn$outcome == 'win')
+t.test(win_data$beta_mean, mu=0)
+```
+
+### Right Crus I - rlearn
+```{r}
+adole_social_data_c1_r_rlearn <- subset(adole_social_data, adole_social_data$roi == 'region06-social')
+adult_social_data_c1_r_rlearn <- subset(adult_social_data, adult_social_data$roi == 'region06-social')
+```
+
+## T-Test
+```{r}
+win_data <- subset(adole_social_data_c1_r_rlearn, adole_social_data_c1_r_rlearn$outcome == 'win')
+t.test(win_data$beta_mean, mu=0)
+```
+
+```{r}
+win_data <- subset(adult_social_data_c1_r_rlearn, adult_social_data_c1_r_rlearn$outcome == 'win')
+t.test(win_data$beta_mean, mu=0)
+```
+
+
+### Right Crus I - social
+```{r}
+adole_social_data_c1_r_social <- subset(adole_social_data, adole_social_data$roi == 'C1_r-social')
+adult_social_data_c1_r_social <- subset(adult_social_data, adult_social_data$roi == 'C1_r-social')
+```
+
+## T-Test
+```{r}
+win_data <- subset(adole_social_data_c1_r_social, adole_social_data_c1_r_social$outcome == 'win')
+t.test(win_data$beta_mean, mu=0)
+```
+
+```{r}
+win_data <- subset(adult_social_data_c1_r_social, adult_social_data_c1_r_social$outcome == 'win')
+t.test(win_data$beta_mean, mu=0)
+```
+
+
+
+## Social Reward
+Mean beta ~ Outcome x ROI
+
+Create data subset for group and task
+```{r}
+adole_social_data <- all_sub_roi_betas[(all_sub_roi_betas$group == 'kid') & (all_sub_roi_betas$task == 'social'), ]
+adult_social_data <- all_sub_roi_betas[(all_sub_roi_betas$group == 'college') & (all_sub_roi_betas$task == 'social'), ]
+```
+
+
+Create data subset for positive valence
+```{r}
+adole_social_positive <- subset(adole_social_data, adole_social_data$valence == 'positive')
+adult_social_positive <- subset(adult_social_data, adult_social_data$valence == 'positive')
+```
+
+
+Filter for ROIs
+```{r}
+adole_social_positive_rois <- adole_social_positive[(adole_social_positive$roi == 'VS_l-rlearn') | (adole_social_positive$roi == 'C1_r-rlearn'), ]
+adult_social_positive_rois <- adult_social_positive[(adult_social_positive$roi == 'VS_l-rlearn') | (adult_social_positive$roi == 'C1_r-rlearn'), ]
+```
+
+
+ANOVA
+```{r}
+anova_adole_social <- aov(beta_mean ~ outcome*roi, data=adole_social_positive_rois)
+summary(anova_adole_social)
+```
+
+
+```{r}
+anova_adult_social <- aov(beta_mean ~ outcome*roi, data=adult_social_positive_rois)
+summary(anova_adult_social)
+```
+
+```{r}
+tukey.test <- TukeyHSD(anova_adole_social)
+tukey.test
+```
+
+
+```{r}
+tukey.test <- TukeyHSD(anova_adult_social)
+tukey.test
+```
+
+
+
+# Social Reward between valence
+mean_beta ~ valence x outcome x ROI
+
+Filter for ROIs
+```{r}
+adole_social_roi <- adole_social_data[(adole_social_data$roi == 'VS_l-rlearn') | (adole_social_data$roi == 'C1_r-social'), ]
+adult_social_roi <- adult_social_data[(adult_social_data$roi == 'VS_l-rlearn') | (adult_social_data$roi == 'C1_r-social'), ]
+```
+
+
+ANOVA
+```{r}
+anova_adole_social <- aov(beta_mean ~ valence*outcome*roi, data=adole_social_roi)
+summary(anova_adole_social)
+```
+
+
+
+
+
+```{r}
+anova_adult_social <- aov(beta_mean ~ valence*outcome*roi, data=adult_social_roi)
+summary(anova_adult_social)
+```
+
+
+```{r}
+ggplot(data=adole_social_roi, aes(x=roi, y=beta_mean, alpha=outcome, fill=valence)) + 
+  geom_bar(stat = 'summary', position=position_dodge()) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```
+
+```{r}
+tukey.test <- TukeyHSD(anova_adole_social)
+tukey.test
+```
+
+
+
+
+
+
+Create subsets for groups
+```{r}
+adole_data <- subset(all_sub_roi_betas,all_sub_roi_betas$group == 'kid')
+
+adult_data <- subset(all_sub_roi_betas,all_sub_roi_betas$group == 'adult')
+
+```
+
+```{r}
+adult_VS_l_rlearn <- subset(adult_data, adult_data$roi == 'VS_l-rlearn') 
+```
+
+```{r}
+adole_VS_l_rlearn <- subset(adole_data, adole_data$roi == 'VS_l-rlearn') 
+```
+
+```{r}
+anova_mod_adult <- aov(beta_mean ~ task*valence*outcome, data=adult_VS_l_rlearn)
+summary(anova_mod_adult)
+```
+
+```{r}
+ggplot(adult_VS_l_rlearn, aes(x=task, y=beta_mean, alpha=outcome, fill=valence)) + 
+  stat_summary(fun.data=mean_sdl, geom='bar', position=position_dodge()) + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```
+
+
+
+
+
+
+
+```{r}
+anova_mod_adole <- aov(beta_mean ~ task*valence*outcome, data=adole_VS_l_rlearn)
+summary(anova_mod_adole)
+```
+
+
+Create subsets for the social and monetary tasks
+```{r}
+mdoors_data <- subset(all_sub_roi_betas,all_sub_roi_betas$task == 'mdoors')
+
+social_data <- subset(all_sub_roi_betas,all_sub_roi_betas$task == 'social')
+
+```
+
+Create subsets for ROIs
+```{r}
+mdoors_VS_l_rlearn <- subset(mdoors_data, mdoors_data$roi == 'VS_l-rlearn') 
+mdoors_VS_l_rlearn
+```
+
+
+```{r}
+mdoors_C1_r_rlearn <- subset(mdoors_data, mdoors_data$roi == 'C1_r-rlearn') 
+```
+
+```{r}
+mdoors_LIX_r_rlearn <- subset(mdoors_data, mdoors_data$roi == 'LIX_r-rlearn') 
+```
+
+
+# ANOVA
+
+```{r}
+anova_mod_mdoors <- aov(beta_mean ~ group*valence*outcome, data=mdoors_VS_l_rlearn)
+summary(anova_mod_mdoors)
+```
+
+
+```{r}
+anova_mod_mdoors <- aov(beta_mean ~ group*valence*outcome, data=mdoors_C1_r_rlearn)
+summary(anova_mod_mdoors)
+```
+
+
+```{r}
+anova_mod_mdoors <- aov(beta_mean ~ group*valence*outcome, data=mdoors_LIX_r_rlearn)
+summary(anova_mod_mdoors)
+```
+
+
+
+```{r}
+anova_mod_social <- aov(beta_mean ~ group*valence*outcome, data=social_data)
+summary(anova_mod_social)
+```
+
+
+```{r}
+ggplot(mdoors_LIX_r_rlearn, aes(x=group, y=beta_mean, fill=outcome)) + 
+  stat_summary(fun.data=mean_sdl, geom='bar', position=position_dodge()) + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```
+
+
+```{r}
+library(tidyverse)
+library(haven)
+library(psych)
+library(reghelper)
+library(sjPlot)
+```
+
+
+```{r}
+cl5_m11_ss <- simple_slopes(ancova_mod)
+cl5_m11_ss
+```
+
+
+
+```{r}
+cell.means <- matrix(with(VS_l_data,
+                          tapply(Beta, interaction(Valence, Domain), mean)))
+cell.means
+```
+
+
+
+
+
+
+
+# Use Megan's data
+```{r}
+library('readxl')
+library(dplyr)
+library(stringr)
+```
+
+
+```{r}
+full_data <- read_excel('../../misc/aggregate_full_data_SPSS_020419.xlsx')
+full_data
+```
+
+
+
+
+
+```{r}
+full_data$Subject <- gsub('s', 'sub-', full_data$Subject)
+full_data
+```
+
+
+```{r}
+VS_l_data$ch_totanx <- NA
+VS_l_data$ch_cdi_total <- NA
+
+for (subj in unique(VS_l_data$Subject_ID)) {
+  VS_l_data[VS_l_data$Subject_ID == subj, ]$ch_totanx <- full_data[full_data$Subject == subj,]$ch_totanx
+  VS_l_data[VS_l_data$Subject_ID == subj, ]$ch_cdi_total <- full_data[full_data$Subject == subj,]$ch_cdi_total
+}
+```
+
+
+```{r}
+ancova_mod <- aov(Beta ~ Domain*Valence*Outcome*ch_totanx*ch_cdi_total, data=VS_l_data)
+anova(ancova_mod)
+```
+
+
+```{r}
+ancova_mod <- lm(Beta ~ Domain*Valence*Outcome*ch_totanx*ch_cdi_total, data=VS_l_data)
+summary(ancova_mod)
+```
+
+

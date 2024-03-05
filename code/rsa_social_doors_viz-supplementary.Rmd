@@ -1,0 +1,643 @@
+---
+title: "Social Doors RSA"
+author: "Haroon Popal"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    number_sections: true
+    toc: true
+    toc_float: 
+      collapsed: false
+    toc_depth: 2
+    df_print: paged
+    css: !expr here::here("./style_srk_behavioral.css")
+    knit: (function(inputFile, encoding) { 
+      out_dir <- './';
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=file.path(dirname(inputFile), out_dir, 'index.html')) })
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+require("knitr")
+opts_knit$set(root.dir = "~/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/rsa/")
+```
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+```
+
+
+
+
+
+
+# Valence
+```{r}
+rdm_val = c(c(0,0,0,1,1,1),
+            c(0,0,0,1,1,1),
+            c(0,0,0,1,1,1),
+            c(1,1,1,0,0,0),
+            c(1,1,1,0,0,0),
+            c(1,1,1,0,0,0))
+
+dim(rdm_val) <- c(6,6)
+
+conditions = c('Negative','Negative Win','Negative Loss',
+               'Positive','Positive Win','Positive Loss')
+
+dimnames(rdm_val) = list(conditions, conditions)
+
+rdm_val_melt <- melt(rdm_val)
+
+ggplot(rdm_val_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
+  geom_tile(width = 1, color='grey') +
+  scale_fill_distiller(direction = 1) +
+  labs(title = "Valence RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), plot.background = element_blank())
+
+ggsave('rdm_val.png')
+```
+
+
+```{r}
+all_sim_val <- read.csv(file='valence_rdm_similarity.csv', header = TRUE)
+all_sim_val
+
+# Use "adult as group label
+all_sim_val$group[all_sim_val$group == 'control'] <- 'adult'
+all_sim_val$group[all_sim_val$group == 'college'] <- 'adult'
+```
+
+
+## Filter for group and task
+```{r}
+sim_val_adole <- all_sim_val[(all_sim_val$group == 'kid'), ]
+
+# Filter for ROIs
+sim_val_adole_roi <- sim_val_adole[(sim_val_adole$roi == 'VS_l-rlearn') | (sim_val_adole$roi == 'C1_r-social') | (sim_val_adole$roi == 'LIX_r-rlearn'), ]
+
+# Filter for only the social task
+sim_val_adole_roi_social <- sim_val_adole_roi[(sim_val_adole_roi$task == 'social'), ]
+
+
+```
+
+## ANOVA
+```{r}
+anova_mod_sim_val <- aov(r ~ roi, data=sim_val_adole_roi_social)
+summary(anova_mod_sim_val)
+```
+
+## Post-hoc Tests
+```{r}
+tukey.test <- TukeyHSD(anova_mod_sim_val)
+tukey.test
+```
+
+
+```{r}
+ggplot(sim_val_adole_roi_social, aes(x=roi, y=r)) + 
+  #stat_summary(fun.data=mean_sdl, geom='bar', position=position_dodge()) + 
+  geom_bar(stat = 'summary', position=position_dodge()) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```
+
+## One sample t-tests
+### Right Crus I
+```{r}
+roi_c1_r <- sim_val_adole_roi_social[sim_val_adole_roi_social$roi == 'C1_r-social',]$r
+roi_c1_z <- fisherz(roi_c1_r)
+t.test(roi_c1_z, mu = 0)
+```
+
+### Right Lobule IX
+```{r}
+roi_LIX_r <- sim_val_adole_roi_social[sim_val_adole_roi_social$roi == 'LIX_r-rlearn',]$r
+roi_LIX_z <- fisherz(roi_LIX_r)
+t.test(roi_LIX_z, mu = 0)
+```
+
+### Left Ventrial Striatum
+```{r}
+roi_VS_r <- sim_val_adole_roi_social[sim_val_adole_roi_social$roi == 'VS_l-rlearn',]$r
+roi_VS_z <- fisherz(roi_VS_r)
+t.test(roi_VS_z, mu = 0)
+```
+
+
+
+# Being correct is being correct
+```{r}
+rdm_cor = c(c(0,0,0,0,0,0),
+            c(0,0,1,0,0,1),
+            c(0,1,0,0,1,0),
+            c(0,0,0,0,0,0),
+            c(0,0,1,0,0,1),
+            c(0,1,0,0,1,0))
+
+dim(rdm_cor) <- c(6,6)
+
+conditions = c('Negative','Negative Win','Negative Loss',
+               'Positive','Positive Win','Positive Loss')
+
+dimnames(rdm_cor) = list(conditions, conditions)
+
+rdm_cor_melt <- melt(rdm_cor)
+
+ggplot(rdm_cor_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
+  geom_tile(width = 1, color = 'grey') +
+  theme_minimal() + 
+  scale_fill_distiller(direction = 1) + 
+  labs(title = "Domain General Correct RDM", x = "\nTask Conditions", y = "") + 
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), plot.background = element_blank())
+
+ggsave('rdm_cor.png')
+```
+
+```{r}
+# Import data
+all_sim_cor <- read.csv(file='correct_rdm_similarity.csv', header = TRUE)
+
+# Use "adult as group label
+all_sim_cor$group[all_sim_cor$group == 'control'] <- 'adult'
+all_sim_cor$group[all_sim_cor$group == 'college'] <- 'adult'
+
+head(all_sim_cor)
+```
+
+# Filter for group and relevant ROIs
+## Filter for group 
+```{r}
+# Filter for just adolescents
+sim_cor_adole <- all_sim_cor[(all_sim_cor$group == 'kid'), ]
+
+# Filter for ROIs
+sim_cor_adole_roi <- sim_cor_adole[(sim_cor_adole$roi == 'VS_l-rlearn') | (sim_cor_adole$roi == 'C1_r-social') | (sim_cor_adole$roi == 'LIX_r-rlearn'), ]
+
+# Filter for only the social task
+sim_cor_adole_roi_social <- sim_cor_adole_roi[(sim_cor_adole_roi$task == 'social'), ]
+
+```
+
+## ANOVA
+Correlation to model RDM predicted by region of interest
+```{r}
+anova_mod_sim_cor <- aov(r ~ roi, data=sim_cor_adole_roi_social)
+summary(anova_mod_sim_cor)
+```
+
+
+## Post-hoc Test
+```{r}
+tukey.test <- TukeyHSD(anova_mod_sim_cor)
+tukey.test
+```
+
+## Visualization
+```{r}
+ggplot(sim_cor_adole_roi_social, aes(x=roi, y=r)) + 
+  #stat_summary(fun.data=mean_sdl, geom='bar', position=position_dodge()) + 
+  geom_bar(stat = 'summary', position=position_dodge()) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```
+
+
+## One sample t-tests
+### Right Crus I
+```{r}
+roi_c1_r <- sim_cor_adole_roi_social[sim_cor_adole_roi_social$roi == 'C1_r-social',]$r
+roi_c1_z <- fisherz(roi_c1_r)
+t.test(roi_c1_z, mu = 0)
+```
+
+### Right Lobule IX
+```{r}
+roi_LIX_r <- sim_cor_adole_roi_social[sim_cor_adole_roi_social$roi == 'LIX_r-rlearn',]$r
+roi_LIX_z <- fisherz(roi_LIX_r)
+t.test(roi_LIX_z, mu = 0)
+```
+
+### Left Ventrial Striatum
+```{r}
+roi_VS_r <- sim_cor_adole_roi_social[sim_cor_adole_roi_social$roi == 'VS_l-rlearn',]$r
+roi_VS_z <- fisherz(roi_VS_r)
+t.test(roi_VS_z, mu = 0)
+```
+
+
+
+
+
+
+
+
+
+
+# Positive win is different from negative win
+```{r}
+all_sim_vcr <- read.csv(file='corrval_rdm_similarity.csv', header = TRUE)
+all_sim_vcr
+```
+
+
+```{r}
+# Use "adult as group label
+all_sim_vcr$group[all_sim_vcr$group == 'control'] <- 'adult'
+all_sim_vcr$group[all_sim_vcr$group == 'college'] <- 'adult'
+```
+
+
+
+## Filter for group and task
+```{r}
+sim_vcr_adole <- all_sim_vcr[(all_sim_vcr$group == 'kid'), ]
+```
+
+
+## Filter for ROIs
+```{r}
+sim_vcr_adole_roi <- sim_vcr_adole[(sim_vcr_adole$roi == 'VS_l-rlearn') | (sim_vcr_adole$roi == 'C1_r-social') | (sim_vcr_adole$roi == 'LIX_r-rlearn'), ]
+
+```
+
+## ANOVA
+```{r}
+anova_mod_sim_vcr <- aov(r ~ task*roi, data=sim_vcr_adole_roi)
+summary(anova_mod_sim_vcr)
+```
+
+
+```{r}
+tukey.test <- TukeyHSD(anova_mod_sim_cor)
+tukey.test
+```
+
+
+```{r}
+ggplot(sim_vcr_adole_roi, aes(x=roi, y=r, fill=task)) + 
+  #stat_summary(fun.data=mean_sdl, geom='bar', position=position_dodge()) + 
+  geom_bar(stat = 'summary', position=position_dodge()) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```
+
+
+
+
+
+
+
+
+
+# Valence
+```{r}
+all_sim_val <- read.csv(file='valence_rdm_similarity.csv', header = TRUE)
+all_sim_val
+```
+
+
+```{r}
+# Use "adult as group label
+all_sim_val$group[all_sim_val$group == 'control'] <- 'adult'
+all_sim_val$group[all_sim_val$group == 'college'] <- 'adult'
+```
+
+
+
+## Filter for group and task
+```{r}
+sim_val_adole <- all_sim_val[(all_sim_val$group == 'kid'), ]
+```
+
+
+## Filter for ROIs
+```{r}
+sim_val_adole_roi <- sim_val_adole[(sim_val_adole$roi == 'VS_l-rlearn') | (sim_val_adole$roi == 'C1_r-social') | (sim_val_adole$roi == 'LIX_r-rlearn'), ]
+
+```
+
+## ANOVA
+```{r}
+anova_mod_sim_val <- aov(r ~ task*roi, data=sim_val_adole_roi)
+summary(anova_mod_sim_vcr)
+```
+
+
+```{r}
+tukey.test <- TukeyHSD(anova_mod_sim_val)
+tukey.test
+```
+
+
+```{r}
+ggplot(sim_val_adole_roi, aes(x=roi, y=r, fill=task)) + 
+  #stat_summary(fun.data=mean_sdl, geom='bar', position=position_dodge()) + 
+  geom_bar(stat = 'summary', position=position_dodge()) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Filter for ROIs
+```{r}
+adole_sim_win_roi <- adole_sim_win[(adole_sim_win$roi == 'VS_l-rlearn') | (adole_sim_win$roi == 'C1_r-rlearn') | (adole_sim_win$roi == 'C1_r-social'), ]
+
+```
+
+
+
+```{r}
+ggplot(adole_sim_win_roi, aes(x=roi, y=r, fill=task)) + 
+  #stat_summary(fun.data=mean_sdl, geom='bar', position=position_dodge()) + 
+  geom_bar(stat = 'summary', position=position_dodge()) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```
+
+
+
+# ROI to ROI correlation
+```{r}
+C1_r_social_sim <- read.csv(file='roi_C1_r-social_similarity.csv', header = TRUE)
+LIX_r_rlearn_sim <- read.csv(file='roi_LIX_r-rlearn_similarity.csv', header = TRUE)
+C1_r_rlearn_sim <- read.csv(file='roi_C1_r-rlearn_similarity.csv', header = TRUE)
+C1_r_rlearn_sim
+```
+
+```{r}
+# Use "adult as group label
+C1_r_social_sim$group[C1_r_social_sim$group == 'control'] <- 'adult'
+C1_r_social_sim$group[C1_r_social_sim$group == 'college'] <- 'adult'
+
+LIX_r_rlearn_sim$group[LIX_r_rlearn_sim$group == 'control'] <- 'adult'
+LIX_r_rlearn_sim$group[LIX_r_rlearn_sim$group == 'college'] <- 'adult'
+
+C1_r_rlearn_sim$group[C1_r_rlearn_sim$group == 'control'] <- 'adult'
+C1_r_rlearn_sim$group[C1_r_rlearn_sim$group == 'college'] <- 'adult'
+```
+
+
+
+Combine data
+```{r}
+roi_roi_sim <- data.frame(colnames=c('subj','group','task','target','roi','r'))
+C1_r_social_sim$target <- 'C1_r-social'
+#C1_r_rlearn_sim$target <- 'C1_r-rlearn'
+LIX_r_rlearn_sim$target <- 'LIX_r-rlearn'
+
+roi_roi_sim <- rbind(C1_r_social_sim, LIX_r_rlearn_sim)
+```
+
+Remove autocorrelations
+```{r}
+roi_roi_sim <- roi_roi_sim[(roi_roi_sim$r != 1), ]
+
+```
+
+## Filter for group
+```{r}
+roi_roi_sim_social <- roi_roi_sim[roi_roi_sim$group == 'kid', ]
+```
+
+## Filter for ROIs
+```{r}
+roi_roi_sim_social_roi <- roi_roi_sim_social[(roi_roi_sim_social$roi == 'VS_l-rlearn') | (roi_roi_sim_social$roi == 'TPJ_l-social'), ]
+
+```
+
+```{r}
+roi_roi_sim_social_roi <- roi_roi_sim_social_roi[complete.cases(roi_roi_sim_social_roi),]
+```
+
+
+## ANOVA
+```{r}
+anova_mod_roi_sim <- aov(r ~ task*target*roi, data=roi_roi_sim_social_roi)
+summary(anova_mod_roi_sim)
+```
+
+
+```{r}
+tukey.test <- TukeyHSD(anova_mod_roi_sim)
+tukey.test
+```
+
+
+```{r}
+ggplot(roi_roi_sim_social_roi, aes(x=roi, y=r, fill=target, alpha=task)) + 
+  #stat_summary(fun.data=mean_sdl, geom='bar', position=position_dodge()) + 
+  geom_bar(stat = 'summary', position=position_dodge()) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```
+
+
+
+
+
+
+# Connectivity differences between groups
+Remove autocorrelations
+```{r}
+C1_r_social_sim <- C1_r_social_sim[(C1_r_social_sim$r != 1), ]
+LIX_r_rlearn_sim <- LIX_r_rlearn_sim[(LIX_r_rlearn_sim$r != 1), ]
+
+```
+
+## Filter for task
+```{r}
+C1_r_social_sim_social <- C1_r_social_sim[C1_r_social_sim$task == 'social', ]
+LIX_r_rlearn_sim_social <- LIX_r_rlearn_sim[LIX_r_rlearn_sim$task == 'social', ]
+```
+
+
+```{r}
+C1_r_social_sim_social <- C1_r_social_sim_social[complete.cases(C1_r_social_sim_social),]
+LIX_r_rlearn_sim_social <- LIX_r_rlearn_sim_social[complete.cases(LIX_r_rlearn_sim_social),]
+```
+
+
+## ANOVA
+```{r}
+anova_mod_roi_sim <- aov(r ~ group*roi, data=C1_r_social_sim_social)
+summary(anova_mod_roi_sim)
+```
+
+
+```{r}
+ggplot(C1_r_social_sim_social, aes(x=roi, y=r, fill=group)) + 
+  #stat_summary(fun.data=mean_sdl, geom='bar', position=position_dodge()) + 
+  geom_bar(stat = 'summary', position=position_dodge()) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```
+
+```{r}
+anova_mod_roi_sim <- aov(r ~ group*roi, data=LIX_r_rlearn_sim_social)
+summary(anova_mod_roi_sim)
+```
+
+```{r}
+ggplot(LIX_r_rlearn_sim_social, aes(x=roi, y=r, fill=group)) + 
+  #stat_summary(fun.data=mean_sdl, geom='bar', position=position_dodge()) + 
+  geom_bar(stat = 'summary', position=position_dodge()) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```
+
+
+
+
+
+
+```{r}
+# Use "adult as group label
+C1_r_social_sim$group[C1_r_social_sim$group == 'control'] <- 'adult'
+C1_r_social_sim$group[C1_r_social_sim$group == 'college'] <- 'adult'
+
+LIX_r_rlearn_sim$group[LIX_r_rlearn_sim$group == 'control'] <- 'adult'
+LIX_r_rlearn_sim$group[LIX_r_rlearn_sim$group == 'college'] <- 'adult'
+
+C1_r_rlearn_sim$group[C1_r_rlearn_sim$group == 'control'] <- 'adult'
+C1_r_rlearn_sim$group[C1_r_rlearn_sim$group == 'college'] <- 'adult'
+```
+
+
+Filter by group and task
+```{r}
+C1_r_social_sim_adole_social <- C1_r_social_sim[(C1_r_social_sim$group == 'kid') & (C1_r_social_sim$task == 'social'), ]
+C1_r_rlearn_sim_adole_social <- C1_r_rlearn_sim[(C1_r_rlearn_sim$group == 'kid') & (C1_r_rlearn_sim$task == 'social'), ]
+LIX_r_rlearn_sim_adole_social <- LIX_r_rlearn_sim[(LIX_r_rlearn_sim$group == 'kid') & (LIX_r_rlearn_sim$task == 'social'), ]
+```
+
+
+
+```{r}
+C1_r_social_sim_adole_social[complete.cases(C1_r_social_sim_adole_social), ]
+C1_r_social_sim_adole_social %>%
+  group_by(roi) %>%
+  summarise_at(vars(r), list(name = mean))
+```
+
+```{r}
+C1_r_rlearn_sim_adole_social<- C1_r_rlearn_sim_adole_social[complete.cases(C1_r_rlearn_sim_adole_social), ]
+C1_r_rlearn_sim_adole_social %>%
+  group_by(roi) %>%
+  summarise_at(vars(r), list(name = mean))
+```
+
+```{r}
+LIX_r_rlearn_sim_adole_social %>%
+  group_by(roi) %>%
+  summarise_at(vars(r), list(name = mean))
+```
+
+
+
+Monetary
+Filter by group and task
+```{r}
+C1_r_social_sim_adole_mdoors <- C1_r_social_sim[(C1_r_social_sim$group == 'kid') & (C1_r_social_sim$task == 'mdoors'), ]
+C1_r_rlearn_sim_adole_mdoors <- C1_r_rlearn_sim[(C1_r_rlearn_sim$group == 'kid') & (C1_r_rlearn_sim$task == 'mdoors'), ]
+LIX_r_rlearn_sim_adole_mdoors <- LIX_r_rlearn_sim[(LIX_r_rlearn_sim$group == 'kid') & (LIX_r_rlearn_sim$task == 'mdoors'), ]
+```
+
+
+
+```{r}
+C1_r_social_sim_adole_mdoors %>%
+  group_by(roi) %>%
+  summarise_at(vars(r), list(name = mean))
+```
+
+```{r}
+C1_r_rlearn_sim_adole_mdoors %>%
+  group_by(roi) %>%
+  summarise_at(vars(r), list(name = mean))
+```
+
+```{r}
+LIX_r_rlearn_sim_adole_mdoors %>%
+  group_by(roi) %>%
+  summarise_at(vars(r), list(name = mean))
+```
+
+
+
+
+
+
+
+
+## Being wins are different from loses and from negative wins
+```{r}
+all_sub_sim_val_win <- read.csv(file='corrval_rdm_similarity.csv', header = TRUE)
+all_sub_sim_val_win
+```
+
+
+```{r}
+ggplot(all_sub_sim_val_win, aes(x=roi, y=r, fill=task)) + 
+  #stat_summary(fun.data=mean_sdl, geom='bar', position=position_dodge()) + 
+  geom_bar(stat = 'summary', position=position_dodge()) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle=90))
+```
+
+
+
+
+
