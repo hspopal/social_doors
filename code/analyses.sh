@@ -42,17 +42,17 @@ done
 ## Create suit directory in subj folders and copy relevant files
 
 for subj in "${subj_list[@]}"; do 
-    mkdir derivatives/social_doors-nilearn/sub-${subj}/suit
-    cp derivatives/fmriprep/sub-${subj}/anat/sub-${subj}*preproc_T1w.nii.gz derivatives/social_doors-nilearn/sub-${subj}/suit/
-    cp derivatives/fmriprep/sub-${subj}/anat/sub-${subj}*GM_probseg.nii.gz derivatives/social_doors-nilearn/sub-${subj}/suit/
-    cp derivatives/fmriprep/sub-${subj}/anat/sub-${subj}*WM_probseg.nii.gz derivatives/social_doors-nilearn/sub-${subj}/suit/
-    gzip -d derivatives/social_doors-nilearn/sub-${subj}/suit/*.nii.gz
-    gzip -d derivatives/social_doors-nilearn/sub-${subj}/zmap_*.nii.gz
+    #mkdir derivatives/ppi_analysis/subject_results/sub-${subj}/suit
+    #cp derivatives/fmriprep/sub-${subj}/anat/sub-${subj}*preproc_T1w.nii.gz derivatives/ppi_analysis/subject_results/sub-${subj}/suit/
+    #cp derivatives/fmriprep/sub-${subj}/anat/sub-${subj}*GM_probseg.nii.gz derivatives/ppi_analysis/subject_results/sub-${subj}/suit/
+    #cp derivatives/fmriprep/sub-${subj}/anat/sub-${subj}*WM_probseg.nii.gz derivatives/ppi_analysis/subject_results/sub-${subj}/suit/
+    gzip -d derivatives/ppi_analysis/subject_results/sub-${subj}/suit/*.nii.gz
+    gzip -d derivatives/ppi_analysis/subject_results/sub-${subj}/*.nii.gz
 done
 
 # Move files around for better organization
 for subj in "${subj_list[@]}"; do 
-    mv derivatives/social_doors-nilearn/sub-${subj}/wdzmap_* derivatives/social_doors-nilearn/sub-${subj}/suit/
+    mv derivatives/ppi_analysis/subject_results/sub-${subj}/wd* derivatives/ppi_analysis/subject_results/sub-${subj}/suit/
 done
 
 
@@ -68,26 +68,37 @@ done
 # Recombine new cerebellum SUIT data with original first level maps
 # Dont actually run
 
+data_dir="${BIDS_DIR}/derivatives/social_doors-nilearn"
+analysis_prefix="social_positive_winVlos"
+
 # Resample to original functional space
-flirt -in derivatives/social_doors/sub-010/suit/c_sub-010_run-1_space-MNI152NLin2009cAsym_desc-preproc_T1w_pcereb.nii \
-      -ref derivatives/social_doors/sub-010/tmap_social_facesVoutcm.nii \
-      -out derivatives/social_doors/sub-010/suit/c_sub-010_run-1_space-MNI152NLin2009cAsym_desc-preproc_T1w_pcereb_2mm.nii -applyxfm
+flirt -in ${data_dir}/sub-010/suit/c_sub-010_run-1_space-MNI152NLin2009cAsym_desc-preproc_T1w_pcereb.nii \
+      -ref ${data_dir}/sub-010/zmap_${analysis_prefix}.nii \
+      -out ${data_dir}/sub-010/suit/c_sub-010_run-1_space-MNI152NLin2009cAsym_desc-preproc_T1w_pcereb_2mm.nii \
+      -applyxfm
 
-flirt -in derivatives/social_doors/sub-010/suit/iw_wdtmap_social_facesVoutcm_u_a_sub-010_run-1_space-MNI152NLin2009cAsym_label-GM_probseg.nii \
-      -ref derivatives/social_doors/sub-010/tmap_social_facesVoutcm.nii \
-      -out derivatives/social_doors/sub-010/suit/iw_wdtmap_social_facesVoutcm_u_a_sub-010_run-1_space-MNI152NLin2009cAsym.nii -applyxfm
+#flirt -in ${data_dir}/sub-010/suit/iw_wdzmap_${analysis_prefix}_u_a_sub-010_run-1_space-MNI152NLin2009cAsym_label-GM_probseg.nii \
+#      -ref ${data_dir}/sub-010/zmap_${analysis_prefix}.nii \
+#      -out ${data_dir}/sub-010/suit/iw_wdzmap_${analysis_prefix}_u_a_sub-010_run-1_space-MNI152NLin2009cAsym.nii \
+#      -applyxfm
 
-fslmaths derivatives/social_doors/sub-010/suit/iw_wdtmap_social_facesVoutcm_u_a_sub-010_run-1_space-MNI152NLin2009cAsym.nii -bin derivatives/social_doors/sub-010/suit/iw_wdtmap_social_facesVoutcm_u_a_sub-010_run-1_space-MNI152NLin2009cAsym.nii
+fslmaths ${data_dir}/sub-010/suit/iw_c_sub-010_run-1_space-MNI152NLin2009cAsym_desc-preproc_T1w_pcereb_u_a_sub-010_run-1_space-MNI152NLin2009cAsym_label-GM_probseg.nii \
+        -nan ${data_dir}/sub-010/suit/iw_c_sub-010_run-1_space-MNI152NLin2009cAsym_desc-preproc_T1w_pcereb_u_a_sub-010_run-1_space-MNI152NLin2009cAsym_label-GM_probseg_bin.nii
 
-# Subtract old data
-fslmaths derivatives/social_doors/sub-010/tmap_social_facesVoutcm.nii \
-         -sub derivatives/social_doors/sub-010/suit/c_sub-010_run-1_space-MNI152NLin2009cAsym_desc-preproc_T1w_pcereb_2mm.nii \
-         derivatives/social_doors/sub-010/suit/tmap_social_facesVoutcm_suit.nii.gz
+# Use cerebellum mask to capture original data for only the cerebellum
+fslmaths ${data_dir}/sub-010/zmap_${analysis_prefix}.nii \
+         -mas ${data_dir}/sub-010/suit/iw_c_sub-010_run-1_space-MNI152NLin2009cAsym_desc-preproc_T1w_pcereb_u_a_sub-010_run-1_space-MNI152NLin2009cAsym_label-GM_probseg_bin.nii.gz \
+         ${data_dir}/sub-010/suit/zmap_${analysis_prefix}_pcereb.nii.gz
+
+# Subtract cerebellum masked data from original data
+fslmaths ${data_dir}/sub-010/zmap_${analysis_prefix}.nii \
+         -sub ${data_dir}/sub-010/suit/zmap_${analysis_prefix}_pcereb.nii.gz \
+         ${data_dir}/sub-010/suit/zmap_${analysis_prefix}_suit.nii.gz
 
 # Add cerebellum SUIT data to original functional data
-fslmaths derivatives/social_doors/sub-010/suit/tmap_social_facesVoutcm_suit.nii.gz \
-         -add derivatives/social_doors/sub-010/suit/iw_wdtmap_social_facesVoutcm_u_a_sub-010_run-1_space-MNI152NLin2009cAsym.nii \
-         derivatives/social_doors/sub-010/suit/tmap_social_facesVoutcm_suit.nii.gz
+fslmaths ${data_dir}/sub-010/suit/zmap_${analysis_prefix}_suit.nii.gz \
+         -add ${data_dir}/sub-010/suit/iw_wdzmap_${analysis_prefix}_u_a_sub-010_run-1_space-MNI152NLin2009cAsym_label-GM_probseg.nii \
+         ${data_dir}/sub-010/suit/zmap_${analysis_prefix}_suit.nii.gz
 
 
 

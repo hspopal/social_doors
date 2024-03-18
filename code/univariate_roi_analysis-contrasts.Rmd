@@ -9,12 +9,8 @@ output:
     toc_float: 
       collapsed: false
     df_print: paged
-    css: !expr here::here("./style_srk_behavioral.css")
-knit: (function(inputFile, encoding) { 
-      out_dir <- './';
-      rmarkdown::render(inputFile,
-                        encoding=encoding, 
-                        output_file=file.path(dirname(inputFile), out_dir, 'srk_imaging_summary.html')) })
+    css: !expr here::here("./code/style_srk_behavioral.css")
+
 ---
 
 ```{r setup, include=FALSE}
@@ -25,7 +21,7 @@ knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
 
-opts_knit$set(root.dir = "/Users/tuk12127/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/univariate_roi/")
+opts_knit$set(root.dir = "/Users/haroonpopal/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/univariate_roi/")
 ```
 
 
@@ -34,6 +30,7 @@ opts_knit$set(root.dir = "/Users/tuk12127/OneDrive - Temple University/olson_lab
 library(psych)
 library(ggpubr)
 library(tidyverse)
+library(lmerTest)
 ```
 
 
@@ -42,7 +39,7 @@ library(tidyverse)
 ## King 2019 Atlas
 ![](../misc/king_figure.png)
 
-We will use regions 1 and 2 as control regions since there are related to motor processing. For ROIs we will use regions 5, 6, 7, 8, 9, and 10 since they all overall with crus I and II which have been the main regions implicated in social cogntion. There are also some studies point to crus II's involvement in reinforcement learning.
+We will use regions 1 and 2 as control regions since there are related to motor processing. For ROIs we will use regions 5, 6, 7, 8, 9, and 10 since they all overall with crus I and II which have been the main regions implicated in social cogntion. There are also some studies which point to crus II's involvement in reinforcement learning.
 
 
 
@@ -187,6 +184,13 @@ Sig_adjust
 ```
 
 
+
+
+
+
+
+
+
 ```{r}
 # Test whether each group differs from 0
 t_tests = allg_data_social %>%
@@ -229,7 +233,7 @@ ggsave('../univariate_roi/allp_pos_winVlos_anova_bar.png')
 
 
 
-
+## All Wins vs Losses
 
 
 ```{r}
@@ -322,7 +326,7 @@ colors <- c('orange','white','orange','skyblue','orange','skyblue',
 
 p <- ggbarplot(allg_data, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se', color='task', 
-               fill=colors,position = position_dodge(0.8))
+               position = position_dodge(0.8))
 p + scale_fill_identity(colors) + 
   stat_compare_means(aes(group = task), label = 'p.signif', label.y=0.3) + 
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
@@ -338,7 +342,52 @@ p + scale_fill_identity(colors) +
 
 
 
+# Between group effects
 
+```{r}
+#sig_rois_data <- data.frame(matrix(ncol=7,nrow=0))
+#colnames(sig_rois_data) <- c('group','task','contrast','roi','t_stat','p.adj','estimate')
+
+tasks <- c('mdoors','social')
+contrasts <- c('positive_winVlos', 'all_winVlos')
+
+
+sig_rois <- c('region08',
+              'striatum_ventral')
+
+sig_rois_data_pos <- all_sub_roi_con[all_sub_roi_con$contrast %in% 'positive_winVlos', ]
+sig_rois_data_pos <- sig_rois_data_pos[sig_rois_data_pos$roi %in% sig_rois, ]
+
+```
+
+```{r}
+model_sig_rois_pos <- lmer(contrast_mean ~ group*task*roi + 1 + (1 + task|subject_id) + (1 + roi|subject_id),
+                           data = sig_rois_data_pos)
+summary(model_sig_rois_pos)
+```
+
+
+```{r}
+#sig_rois_data <- data.frame(matrix(ncol=7,nrow=0))
+#colnames(sig_rois_data) <- c('group','task','contrast','roi','t_stat','p.adj','estimate')
+
+tasks <- c('mdoors','social')
+contrasts <- c('positive_winVlos', 'all_winVlos')
+
+
+sig_rois <- c('region08',
+              'striatum_ventral')
+
+sig_rois_data_all <- all_sub_roi_con[all_sub_roi_con$contrast %in% 'all_winVlos', ]
+sig_rois_data_all <- sig_rois_data_all[sig_rois_data_all$roi %in% sig_rois, ]
+
+```
+
+```{r}
+model_sig_rois_all <- lmer(contrast_mean ~ group*task*roi + 1 + (1 + task|subject_id) + (1 + roi|subject_id),
+                           data = sig_rois_data_all)
+summary(model_sig_rois_all)
+```
 
 
 

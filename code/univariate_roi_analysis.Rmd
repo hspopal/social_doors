@@ -10,11 +10,7 @@ output:
       collapsed: false
     df_print: paged
     css: !expr here::here("./style_srk_behavioral.css")
-knit: (function(inputFile, encoding) { 
-      out_dir <- './';
-      rmarkdown::render(inputFile,
-                        encoding=encoding, 
-                        output_file=file.path(dirname(inputFile), out_dir, 'srk_imaging_summary.html')) })
+
 ---
 
 ```{r setup, include=FALSE}
@@ -23,16 +19,17 @@ knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
 
-opts_knit$set(root.dir = "/Users/tuk12127/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/univariate_roi/")
+opts_knit$set(root.dir = "/Users/haroonpopal/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/univariate_roi/")
 ```
 
 
 ```{r}
-work_dir <- "/Users/tuk12127/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/univariate_roi/"
+#work_dir <- "/Users/haroonpopal/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/univariate_roi/"
 ```
 
 ```{r}
 library(psych)
+library(ggplot2)
 ```
 
 
@@ -41,14 +38,14 @@ library(psych)
 
 
 ```{r}
-participants <- read.table(file='../derivatives/participants_good.tsv', sep = '\t', header = TRUE)
+participants <- read.table(file='../participants_good.tsv', sep = '\t', header = TRUE)
 participants
 ```
 
 
 
 ```{r}
-all_sub_roi_betas <- read.csv('../derivatives/univariate_roi/all_sub_roi_betas.csv')
+all_sub_roi_betas <- read.csv('../univariate_roi/all_sub_roi_betas.csv')
 all_sub_roi_betas$subject_id <- all_sub_roi_betas$subj
 #all_sub_roi_betas <- subset(all_sub_roi_betas, select = -c(subj))
 
