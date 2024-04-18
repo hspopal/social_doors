@@ -13,6 +13,7 @@
 ### Psychophysiological Interactions
 - ppi_cerebellum.ipynb
 - ppi_cerebellum-network.ipynb
+- ppi_cerebellum-roi_network.ipynb - working
 
 ### Representational Similarity Analysis
 - rsa_social_doors-fbonly.ipynb
