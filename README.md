@@ -8,7 +8,7 @@
 ### Univariate
 - social_doors_1st_level-nilearn.py
 - social_doors_1st_level-nilearn-indiv_runs.py
-- social_doors_2nd_level-nilearn.ipynb
+- social_doors_2nd_level-nilearn.ipynb - done
 
 ### Psychophysiological Interactions
 - ppi_cerebellum.ipynb
