@@ -14,7 +14,7 @@
 - ppi_cerebellum.ipynb
 - ppi_cerebellum-network.ipynb
 - ppi_cerebellum-roi_network.ipynb - working
-- ppi_cerebellum-dual_regression.ipynb
+- ppi_cerebellum-dual_regression.ipynb - done
 
 ### Representational Similarity Analysis
 - rsa_social_doors-fbonly.ipynb
