@@ -1,0 +1,71 @@
+---
+title: "PPI ROI Analysis"
+author: "Haroon Popal"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(tidyverse)
+library(ggpubr)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+opts_knit$set(root.dir = "/Users/haroonpopal/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/ppi_analysis-nilearn//")
+```
+
+```{r}
+library(psych)
+library(ggpubr)
+library(tidyverse)
+library(lmerTest)
+```
+
+```{r}
+data <- read.table(file='ppi_seed-region08network_roi_stats.csv', sep=',', header = TRUE)
+head(data)
+```
+
+
+```{r}
+subj_info <- read.csv('../participants_good.tsv', sep='\t', header = TRUE)
+head(subj_info)
+```
+
+```{r}
+data_subj_info <- merge(data, subj_info, by.x="subject_id", by.y="participant_id")
+head(data_subj_info)
+```
+
+```{r}
+data_mdoors <- subset(data_subj_info, task == 'mdoors')
+head(data_mdoors)
+```
+
+
+```{r}
+data_social <- subset(data_subj_info, task == 'social')
+head(data_social)
+```
+
+
+```{r}
+model_mdoors <- lm(mean ~ roi*group, data = data_mdoors)
+summary(model_mdoors)
+```
+
+
+```{r}
+model_social <- lm(mean ~ roi*group, data = data_social)
+summary(model_social)
+```
+
+
+
+
+
+
+
+
+
