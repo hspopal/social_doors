@@ -27,7 +27,7 @@ knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
 
 require("knitr")
-opts_knit$set(root.dir = "~/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/rsa-bw_runs/")
+opts_knit$set(root.dir = "~/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/rsa-bw_runs-fb_only/")
 ```
 
 
@@ -41,63 +41,203 @@ library(stringr)
 library(kableExtra)
 ```
 
-
-# Being correct is being correct
 ```{r}
-rdm_cex = c(c(0,1,1,1,1,1),
-            c(1,0,1,1,0,1),
-            c(1,1,0,1,1,0),
-            c(1,1,1,0,1,1),
-            c(1,0,1,1,0,1),
-            c(1,1,0,1,1,0))
+conds <- c('negative_win-mdoors', 'negative_loss-mdoors',
+           'positive_win-mdoors', 'positive_loss-mdoors',
+           'negative_win-social', 'negative_loss-social',
+           'positive_win-social', 'positive_loss-social')
 
-dim(rdm_cex) <- c(6,6)
+n_conds <- length(conds)
+```
 
-conditions = c('Negative','Negative Win','Negative Loss',
-               'Positive','Positive Win','Positive Loss')
 
-dimnames(rdm_cex) = list(conditions, conditions)
 
-rdm_cex_melt <- melt(rdm_cex)
+# Model RDMs
 
-ggplot(rdm_cex_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
+## Task Domain
+
+```{r}
+rdm_tdomain <- c(c(0,0,0,0,1,1,1,1),
+                 c(0,0,0,0,1,1,1,1),
+                 c(0,0,0,0,1,1,1,1),
+                 c(0,0,0,0,1,1,1,1),
+                 c(1,1,1,1,0,0,0,0),
+                 c(1,1,1,1,0,0,0,0),
+                 c(1,1,1,1,0,0,0,0),
+                 c(1,1,1,1,0,0,0,0))
+
+dim(rdm_tdomain) <- c(n_conds, n_conds)
+
+dimnames(rdm_tdomain) = list(conds, conds)
+
+rdm_tdomain_melt <- melt(rdm_tdomain)
+
+ggplot(rdm_tdomain_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
   geom_tile(width = 1, color = 'grey') +
   theme_minimal() + 
   scale_fill_distiller(palette = "Oranges", direction = 1) + 
-  labs(title = "Domain General Outcome RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
+  labs(title = "Task Domain RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), plot.background = element_blank())
 
-ggsave('rdm_cex.png')
+ggsave('rdm_tdomain.png')
 ```
 
+## Valence
+```{r}
+rdm_valence <- c(c(0,0,1,1,0,0,1,1),
+                 c(0,0,1,1,0,0,1,1),
+                 c(1,1,0,0,1,1,0,0),
+                 c(1,1,0,0,1,1,0,0),
+                 c(0,0,1,1,0,0,1,1),
+                 c(0,0,1,1,0,0,1,1),
+                 c(1,1,0,0,1,1,0,0),
+                 c(1,1,0,0,1,1,0,0))
+
+dim(rdm_valence) <- c(n_conds, n_conds)
+
+dimnames(rdm_valence) = list(conds, conds)
+
+rdm_valence_melt <- melt(rdm_valence)
+
+ggplot(rdm_valence_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
+  geom_tile(width = 1, color = 'grey') +
+  theme_minimal() + 
+  scale_fill_distiller(palette = "Oranges", direction = 1) + 
+  labs(title = "Valence RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), plot.background = element_blank())
+
+ggsave('rdm_valence.png')
+```
+
+
+## Outcome
+```{r}
+rdm_outcome = c(c(0,1,0,1,0,1,0,1),
+                c(1,0,1,0,1,0,1,0),
+                c(0,1,0,1,0,1,0,1),
+                c(1,0,1,0,1,0,1,0),
+                c(0,1,0,1,0,1,0,1),
+                c(1,0,1,0,1,0,1,0),
+                c(0,1,0,1,0,1,0,1),
+                c(1,0,1,0,1,0,1,0))
+
+dim(rdm_outcome) <- c(n_conds, n_conds)
+
+dimnames(rdm_outcome) = list(conds, conds)
+
+rdm_outcome_melt <- melt(rdm_outcome)
+
+ggplot(rdm_outcome_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
+  geom_tile(width = 1, color = 'grey') +
+  theme_minimal() + 
+  scale_fill_distiller(palette = "Oranges", direction = 1) + 
+  labs(title = "Outcome RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), plot.background = element_blank())
+
+ggsave('rdm_outcome.png')
+```
+
+
+## Outcome Valence
+Being correct about someone not liking you is different from being correct about someone liking you. But being incorrect about someone not liking you is the same feeling as being incorrect about someone not liking out (negative).
+```{r}
+rdm_outcval = c(c(1,1,1,1,1,1,1,1),
+                c(1,0,1,0,1,0,1,0),
+                c(1,1,1,1,1,1,1,1),
+                c(1,0,1,0,1,0,1,0),
+                c(1,1,1,1,1,1,1,1),
+                c(1,0,1,0,1,0,1,0),
+                c(1,1,1,1,1,1,1,1),
+                c(1,0,1,0,1,0,1,0))
+
+dim(rdm_outcval) <- c(n_conds, n_conds)
+
+dimnames(rdm_outcval) = list(conds, conds)
+
+rdm_outcval_melt <- melt(rdm_outcval)
+
+ggplot(rdm_outcval_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
+  geom_tile(width = 1, color = 'grey') +
+  theme_minimal() + 
+  scale_fill_distiller(palette = "Oranges", direction = 1) + 
+  labs(title = "Outcome Valence RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), plot.background = element_blank())
+
+ggsave('rdm_outcval.png')
+```
+
+
+## Interaction
+Being correct about someone not liking you is different from being correct about someone liking you. But being incorrect about someone not liking you is the same feeling as being incorrect about someone not liking out (negative).
+```{r}
+rdm_intract = c(c(0/3, 1/3, 1/3, 2/3, 1/3, 2/3, 2/3, 3/3),
+                c(1/3, 0/3, 2/3, 1/3, 2/3, 1/3, 3/3, 2/3),
+                c(1/3, 2/3, 0/3, 1/3, 2/3, 3/3, 1/3, 2/3),
+                c(2/3, 1/3, 1/3, 0/3, 3/3, 2/3, 2/3, 1/3),
+                c(1/3, 2/3, 2/3, 3/3, 0/3, 1/3, 1/3, 2/3),
+                c(2/3, 1/3, 3/3, 2/3, 1/3, 0/3, 2/3, 1/3),
+                c(2/3, 3/3, 1/3, 2/3, 1/3, 2/3, 0/3, 1/3),
+                c(3/3, 2/3, 2/3, 1/3, 2/3, 1/3, 1/3, 0/3))
+
+dim(rdm_intract) <- c(n_conds, n_conds)
+
+dimnames(rdm_intract) = list(conds, conds)
+
+rdm_intract_melt <- melt(rdm_intract)
+
+ggplot(rdm_intract_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
+  geom_tile(width = 1, color = 'grey') +
+  theme_minimal() + 
+  scale_fill_distiller(palette = "Oranges", direction = 1) + 
+  labs(title = "Valence Outcome Interaction RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), plot.background = element_blank())
+
+ggsave('rdm_intract.png')
+```
+
+
+# RSA Stats
+
+## Task Domain
 ```{r}
 # Import data
-all_sim_cex <- read.csv(file='crctexc_rdm_similarity.csv', header = TRUE)
+data_tdomain <- read.csv(file='tdomain_rdm_similarity.csv', header = TRUE)
 
 # Use "adult as group label
-all_sim_cex$group[all_sim_cex$group == 'control'] <- 'adult'
-all_sim_cex$group[all_sim_cex$group == 'college'] <- 'adult'
+data_tdomain$group[data_tdomain$group == 'control'] <- 'adult'
+data_tdomain$group[data_tdomain$group == 'college'] <- 'adult'
 
-all_sim_cex
+head(data_tdomain)
 ```
 
-Divide data by task
-```{r}
-all_sim_cex_mdoors <- all_sim_cex[all_sim_cex$task %in% 'mdoors', ]
-all_sim_cex_social <- all_sim_cex[all_sim_cex$task %in% 'social', ]
-
-```
 
 Filter data by hypothesized ROIs
 ```{r}
-hyp_rois <- c('TPJ_b-social','region08','region02','striatum_ventral','striatum_dorsalp')
-hyp_rois_names <- c('TPJ','CB Region 8','CB Region 2','Ventral Striatum','Posterior Dorsal \n Striatum')
+hyp_rois <- c('TPJ_l-social', 'TPJ_r-social','dmPFC_b-social',
+              'region08', 'region06',
+              'striatum_ventral',
+              'region02')
+hyp_rois_names <- c('TPJ (l)', 'TPJ (r)', 'dmPFC',
+                    'CB Region 8','CB Region 6',
+                    'Ventral Striatum',
+                    'CB Region 2')
 
-all_sim_cex_mdoors_rois <- all_sim_cex_mdoors[all_sim_cex_mdoors$roi %in% hyp_rois, ]
-all_sim_cex_social_rois <- all_sim_cex_social[all_sim_cex_social$roi %in% hyp_rois, ]
+data_tdomain_rois <- data_tdomain[data_tdomain$roi %in% hyp_rois, ]
 
 ```
 
@@ -106,86 +246,73 @@ all_sim_cex_social_rois <- all_sim_cex_social[all_sim_cex_social$roi %in% hyp_ro
 
 ```{r}
 
-all_sim_cex_mdoors_rois.ttests <- data.frame(matrix(ncol=7,nrow=0))
-all_sim_cex_social_rois.ttests <- data.frame(matrix(ncol=7,nrow=0))
-colnames(all_sim_cex_mdoors_rois.ttests) <- c('roi','t_stat','p','estimate','CI_l','CI_h','df')
-colnames(all_sim_cex_social_rois.ttests) <- c('roi','t_stat','p','estimate','CI_l','CI_h','df')
+data_tdomain_rois.ttests <- data.frame(matrix(ncol=7,nrow=0))
+colnames(data_tdomain_rois.ttests) <- c('roi','t_stat','p','estimate','CI_l','CI_h','df')
 
 row_n = 1
 for (roi in hyp_rois) {
   # Filter for ROI data
-  roi_data_mdoors <- all_sim_cex_mdoors_rois[all_sim_cex_mdoors_rois$roi %in% roi, ]
-  roi_data_social <- all_sim_cex_social_rois[all_sim_cex_social_rois$roi %in% roi, ]
-  
+  roi_data <- data_tdomain_rois[data_tdomain_rois$roi %in% roi, ]
+
   # Calculate t-test
-  temp_ttest_mdoors <- t.test(roi_data_mdoors$r, mu=0)
-  temp_ttest_social <- t.test(roi_data_social$r, mu=0)
-  
+  temp_ttest <- t.test(roi_data$r, mu=0)
+
   # Fill in dataframe
-  all_sim_cex_mdoors_rois.ttests[row_n,] <- c(roi,temp_ttest_mdoors$statistic,
-                                              temp_ttest_mdoors$p.value,
-                                              temp_ttest_mdoors$estimate, 
-                                              temp_ttest_mdoors$conf.int[1],
-                                              temp_ttest_mdoors$conf.int[2],
-                                              temp_ttest_mdoors$parameter[[1]])
-  all_sim_cex_social_rois.ttests[row_n,] <- c(roi,temp_ttest_social$statistic,
-                                              temp_ttest_social$p.value,
-                                              temp_ttest_social$estimate, 
-                                              temp_ttest_social$conf.int[1],
-                                              temp_ttest_social$conf.int[2],
-                                              temp_ttest_social$parameter[[1]])
+  data_tdomain_rois.ttests[row_n,] <- c(roi,temp_ttest$statistic,
+                                              temp_ttest$p.value,
+                                              temp_ttest$estimate, 
+                                              temp_ttest$conf.int[1],
+                                              temp_ttest$conf.int[2],
+                                              temp_ttest$parameter[[1]])
+
       
   # Increase counter for row numbers
       
   row_n = row_n+1
 }
 
-all_sim_cex_mdoors_rois.ttests$p_adjust <- p.adjust(all_sim_cex_mdoors_rois.ttests$p,
-                                                   method='fdr')
-all_sim_cex_social_rois.ttests$p_adjust <- p.adjust(all_sim_cex_social_rois.ttests$p,
+data_tdomain_rois.ttests$p_adjust <- p.adjust(data_tdomain_rois.ttests$p,
                                                    method='fdr')
 
 ```
 
 
-
-## Monetary
 
 ### ANOVA
 ```{r}
-anova_mod_sim_cor <- aov(r ~ roi, data=all_sim_cex_mdoors_rois)
-summary(anova_mod_sim_cor)
+anova_mod_tdomain <- aov(r ~ roi, data=data_tdomain_rois)
+summary(anova_mod_tdomain)
 ```
 
 
 ```{r}
-x <- all_sim_cex_mdoors_rois$r
-factor <- all_sim_cex_mdoors_rois$roi
+x <- data_tdomain_rois$r
+factor <- data_tdomain_rois$roi
 
 mean.sd <- function(x) c(mean = mean(x), sd = sd(x))
 simplify2array(tapply(x, factor, mean.sd))
 ```
 
 
-## Post-hoc Tests
+### Post-hoc Tests
 ```{r}
-tukey.test <- TukeyHSD(anova_mod_sim_cor)
+tukey.test <- TukeyHSD(anova_mod_tdomain)
 tukey.test
 ```
 
 
 ```{r}
-stats <- compare_means(r ~ roi, , data = all_sim_cex_mdoors_rois, method = "t.test",
+stats <- compare_means(r ~ roi, , data = data_tdomain_rois, method = "t.test",
                        p.adjust.method = 'fdr')
 stats
 ```
 
 
-
+### Visualization
 ```{r}
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-p <- ggbarplot(all_sim_cex_mdoors_rois, x = 'roi', 
+p <- ggbarplot(data_tdomain_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
                fill=cbPalette[7],
                position = position_dodge(0.8))
@@ -196,29 +323,335 @@ p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) +
   #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
   scale_x_discrete(labels=hyp_rois_names) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
-  ggtitle("Similarity to Domain Neutral Outcome in Monetary Task") 
+  ggtitle("Similarity to Task Domain RDM") 
 
-ggsave('rsa_cex_mdoors.png')
+ggsave('rsa_tdomain.png')
 
 ```
 
 
 
-### One sample t-tests
-#### Right Crus I
+
+### Create function for t-tests, ANOVA
 ```{r}
-roi_c1_r <- all_sim_cex_mdoors[all_sim_cex_mdoors$roi == 'region08',]$r
-roi_c1_z <- fisherz(roi_c1_r)
-t.test(roi_c1_z, mu = 0)
+calculate_rsa_stats <- function(data_df_rois) {
+  # Calculate one-sample t-tests
+  data_df_rois.ttests <- data.frame(matrix(ncol=7,nrow=0))
+  colnames(data_df_rois.ttests) <- c('roi','t_stat','p','estimate','CI_l','CI_h','df')
+  
+  row_n = 1
+  for (roi in hyp_rois) {
+    # Filter for ROI data
+    roi_data <- data_df_rois[data_df_rois$roi %in% roi, ]
+  
+    # Calculate t-test
+    temp_ttest <- t.test(roi_data$r, mu=0)
+  
+    # Fill in dataframe
+    data_df_rois.ttests[row_n,] <- c(roi,temp_ttest$statistic,
+                                                temp_ttest$p.value,
+                                                temp_ttest$estimate, 
+                                                temp_ttest$conf.int[1],
+                                                temp_ttest$conf.int[2],
+                                                temp_ttest$parameter[[1]])
+  
+        
+    # Increase counter for row numbers
+        
+    row_n = row_n+1
+  }
+  
+  data_df_rois.ttests$p_adjust <- p.adjust(data_df_rois.ttests$p,
+                                                     method='fdr')
+  
+  return(data_df_rois.ttests)
+  
+}
 ```
 
 
-#### Bilateral Ventrial Striatum
+
+## Valence
 ```{r}
-roi_VS_b <- all_sim_cex_mdoors[all_sim_cex_mdoors$roi == 'striatum_ventral',]$r
-roi_VS_z <- fisherz(roi_VS_b)
-t.test(roi_VS_z, mu = 0)
+# Import data
+data_valence <- read.csv(file='valence_rdm_similarity.csv', header = TRUE)
+
+# Use "adult as group label
+data_valence$group[data_valence$group == 'control'] <- 'adult'
+data_valence$group[data_valence$group == 'college'] <- 'adult'
+
+# Filter for hypothesized rois
+data_valence_rois <- data_valence[data_valence$roi %in% hyp_rois, ]
+
+data_valence_rois.ttests <- calculate_rsa_stats(data_valence_rois)
+
 ```
+
+
+### ANOVA
+```{r}
+anova_mod_valence <- aov(r ~ roi, data=data_valence_rois)
+summary(anova_mod_valence)
+```
+
+
+```{r}
+x <- data_valence_rois$r
+factor <- data_valence_rois$roi
+
+mean.sd <- function(x) c(mean = mean(x), sd = sd(x))
+simplify2array(tapply(x, factor, mean.sd))
+```
+
+
+### Post-hoc Tests
+```{r}
+tukey.test <- TukeyHSD(anova_mod_valence)
+tukey.test
+```
+
+
+```{r}
+stats <- compare_means(r ~ roi, , data = data_valence_rois, method = "t.test",
+                       p.adjust.method = 'fdr')
+head(stats)
+```
+
+
+### Visualization
+```{r}
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+p <- ggbarplot(data_valence_rois, x = 'roi', 
+               y = 'r', add = 'mean_se',
+               fill=cbPalette[7],
+               position = position_dodge(0.8))
+p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
+  #geom_signif(comparisons = list(c("region06", "striatum_ventral"),
+  #                               c('region06','striatum_dorsalp')),
+  #            map_signif_level = TRUE,
+  #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  xlab("Regions of Interests") + ylab("Spearman's rho") + 
+  ggtitle("Similarity to Valence RMD") 
+
+ggsave('rsa_valence.png')
+
+```
+
+
+
+## Outcome
+```{r}
+# Import data
+data_outcome <- read.csv(file='outcome_rdm_similarity.csv', header = TRUE)
+
+# Use "adult as group label
+data_outcome$group[data_outcome$group == 'control'] <- 'adult'
+data_outcome$group[data_outcome$group == 'college'] <- 'adult'
+
+# Filter for hypothesized rois
+data_outcome_rois <- data_outcome[data_outcome$roi %in% hyp_rois, ]
+
+data_outcome_rois.ttests <- calculate_rsa_stats(data_outcome_rois)
+
+```
+
+
+### ANOVA
+```{r}
+anova_mod_outcome <- aov(r ~ roi, data=data_outcome_rois)
+summary(anova_mod_outcome)
+```
+
+
+```{r}
+x <- data_outcome_rois$r
+factor <- data_outcome_rois$roi
+
+mean.sd <- function(x) c(mean = mean(x), sd = sd(x))
+simplify2array(tapply(x, factor, mean.sd))
+```
+
+
+## Post-hoc Tests
+```{r}
+tukey.test <- TukeyHSD(anova_mod_outcome)
+tukey.test
+```
+
+
+```{r}
+stats <- compare_means(r ~ roi, , data = data_outcome_rois, method = "t.test",
+                       p.adjust.method = 'fdr')
+head(stats)
+```
+
+
+### Visualization
+```{r}
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+p <- ggbarplot(data_outcome_rois, x = 'roi', 
+               y = 'r', add = 'mean_se',
+               fill=cbPalette[7],
+               position = position_dodge(0.8))
+p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
+  #geom_signif(comparisons = list(c("region06", "striatum_ventral"),
+  #                               c('region06','striatum_dorsalp')),
+  #            map_signif_level = TRUE,
+  #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  xlab("Regions of Interests") + ylab("Spearman's rho") + 
+  ggtitle("Similarity to Outcome RMD") 
+
+ggsave('rsa_outcome.png')
+
+```
+
+
+
+## Outcome Valence
+```{r}
+# Import data
+data_outcval <- read.csv(file='crctval_rdm_similarity.csv', header = TRUE)
+
+# Use "adult as group label
+data_outcval$group[data_outcval$group == 'control'] <- 'adult'
+data_outcval$group[data_outcval$group == 'college'] <- 'adult'
+
+# Filter for hypothesized rois
+data_outcval_rois <- data_outcval[data_outcval$roi %in% hyp_rois, ]
+
+data_outcval_rois.ttests <- calculate_rsa_stats(data_outcval_rois)
+
+```
+
+
+### ANOVA
+```{r}
+anova_mod_outcval <- aov(r ~ roi, data=data_outcval_rois)
+summary(anova_mod_outcval)
+```
+
+
+```{r}
+x <- data_outcval_rois$r
+factor <- data_outcval_rois$roi
+
+mean.sd <- function(x) c(mean = mean(x), sd = sd(x))
+simplify2array(tapply(x, factor, mean.sd))
+```
+
+
+### Post-hoc Tests
+```{r}
+tukey.test <- TukeyHSD(anova_mod_outcval)
+tukey.test
+```
+
+
+```{r}
+stats <- compare_means(r ~ roi, , data = data_outcval_rois, method = "t.test",
+                       p.adjust.method = 'fdr')
+head(stats)
+```
+
+
+### Visualization
+```{r}
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+p <- ggbarplot(data_outcval_rois, x = 'roi', 
+               y = 'r', add = 'mean_se',
+               fill=cbPalette[7],
+               position = position_dodge(0.8))
+p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
+  #geom_signif(comparisons = list(c("region06", "striatum_ventral"),
+  #                               c('region06','striatum_dorsalp')),
+  #            map_signif_level = TRUE,
+  #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  xlab("Regions of Interests") + ylab("Spearman's rho") + 
+  ggtitle("Similarity to Outcome Valence RMD") 
+
+ggsave('rsa_outcval.png')
+
+```
+
+
+
+## Outcome Valence Interaction
+```{r}
+# Import data
+data_intract <- read.csv(file='intract_rdm_similarity.csv', header = TRUE)
+
+# Use "adult as group label
+data_intract$group[data_intract$group == 'control'] <- 'adult'
+data_intract$group[data_intract$group == 'college'] <- 'adult'
+
+# Filter for hypothesized rois
+data_intract_rois <- data_intract[data_intract$roi %in% hyp_rois, ]
+
+data_intract_rois.ttests <- calculate_rsa_stats(data_intract_rois)
+
+```
+
+
+### ANOVA
+```{r}
+anova_mod_intract <- aov(r ~ roi, data=data_intract_rois)
+summary(anova_mod_intract)
+```
+
+
+```{r}
+x <- data_intract_rois$r
+factor <- data_intract_rois$roi
+
+mean.sd <- function(x) c(mean = mean(x), sd = sd(x))
+simplify2array(tapply(x, factor, mean.sd))
+```
+
+
+### Post-hoc Tests
+```{r}
+tukey.test <- TukeyHSD(anova_mod_intract)
+tukey.test
+```
+
+
+```{r}
+stats <- compare_means(r ~ roi, , data = data_intract_rois, method = "t.test",
+                       p.adjust.method = 'fdr')
+head(stats)
+```
+
+
+# Visualization
+```{r}
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+p <- ggbarplot(data_intract_rois, x = 'roi', 
+               y = 'r', add = 'mean_se',
+               fill=cbPalette[7],
+               position = position_dodge(0.8))
+p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
+  #geom_signif(comparisons = list(c("region06", "striatum_ventral"),
+  #                               c('region06','striatum_dorsalp')),
+  #            map_signif_level = TRUE,
+  #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  xlab("Regions of Interests") + ylab("Spearman's rho") + 
+  ggtitle("Similarity to Outcome Valence Interaction RMD") 
+
+ggsave('rsa_intract.png')
+
+```
+
+
+
+
 
 
 
