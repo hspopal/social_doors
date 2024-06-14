@@ -321,7 +321,7 @@ p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) +
   #                               c('region06','striatum_dorsalp')),
   #            map_signif_level = TRUE,
   #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
-  scale_x_discrete(labels=hyp_rois_names) + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Similarity to Task Domain RDM") 
 
@@ -431,7 +431,7 @@ p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) +
   #                               c('region06','striatum_dorsalp')),
   #            map_signif_level = TRUE,
   #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
-  scale_x_discrete(labels=hyp_rois_names) + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Similarity to Valence RMD") 
 
@@ -501,7 +501,7 @@ p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) +
   #                               c('region06','striatum_dorsalp')),
   #            map_signif_level = TRUE,
   #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
-  scale_x_discrete(labels=hyp_rois_names) + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Similarity to Outcome RMD") 
 
@@ -571,7 +571,7 @@ p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) +
   #                               c('region06','striatum_dorsalp')),
   #            map_signif_level = TRUE,
   #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
-  scale_x_discrete(labels=hyp_rois_names) + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Similarity to Outcome Valence RMD") 
 
@@ -641,7 +641,7 @@ p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) +
   #                               c('region06','striatum_dorsalp')),
   #            map_signif_level = TRUE,
   #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
-  scale_x_discrete(labels=hyp_rois_names) + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Similarity to Outcome Valence Interaction RMD") 
 
@@ -654,86 +654,10 @@ ggsave('rsa_intract.png')
 
 
 
-
-## Social
-
-### ANOVA
-```{r}
-anova_mod_sim_cex <- aov(r ~ roi, data=all_sim_cex_social_rois)
-summary(anova_mod_sim_cex)
-```
-
-```{r}
-x <- all_sim_cex_social_rois$r
-factor <- all_sim_cex_social_rois$roi
-
-mean.sd <- function(x) c(mean = mean(x), sd = sd(x))
-simplify2array(tapply(x, factor, mean.sd))
-```
-
-
-## Post-hoc Tests
-```{r}
-tukey.test <- TukeyHSD(anova_mod_sim_cex)
-tukey.test
-```
-
-
-```{r}
-stats <- compare_means(r ~ roi, , data = all_sim_cex_social_rois, method = "t.test",
-                       p.adjust.method = 'fdr')
-stats
-```
-
-
-```{r}
-p <- ggbarplot(all_sim_cex_social_rois, x = 'roi', 
-               y = 'r', add = 'mean_se',
-               fill=cbPalette[7],
-               position = position_dodge(0.8))
-p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  #geom_signif(comparisons = list(c("region08", "striatum_ventral")),
-  #            map_signif_level = TRUE,
-  #            annotations = c('*'), y_position = c(0.235), vjust=0.1) +  
-  scale_x_discrete(labels=hyp_rois_names) + 
-  xlab("Regions of Interests") + ylab("Spearman's rho") + 
-  ggtitle("Similarity to Domain Neutral Outcome in Social Task") 
-
-ggsave('rsa_cex_social.png')
-
-```
-
-
-
-### One sample t-tests
-#### Right Crus I
-```{r}
-roi_c1_r <- all_sim_cex_social[all_sim_cex_social$roi == 'region08',]$r
-roi_c1_z <- fisherz(roi_c1_r)
-t.test(roi_c1_z, mu = 0)
-```
-
-
-#### Bilateral Ventrial Striatum
-```{r}
-roi_VS_b <- all_sim_cex_social[all_sim_cex_social$roi == 'striatum_ventral',]$r
-roi_VS_z <- fisherz(roi_VS_b)
-t.test(roi_VS_z, mu = 0)
-```
-
-
-
-
-
-
-
-
-
-
-
+***
 # Positive win is different from negative win
 ```{r}
-all_sim_vcr <- read.csv(file='corrval_rdm_similarity.csv', header = TRUE)
+all_sim_vcr <- read.csv(file='posnegwin_similarity.csv', header = TRUE)
 all_sim_vcr
 ```
 
@@ -755,7 +679,7 @@ all_sim_vcr_social <- all_sim_vcr[all_sim_vcr$task %in% 'social', ]
 
 Filter data by hypothesized ROIs
 ```{r}
-hyp_rois <- c('striatum_ventral','striatum_dorsalp','region08','region02','TPJ_b-social')
+#hyp_rois <- c('striatum_ventral','striatum_dorsalp','region08','region02','TPJ_b-social')
 
 all_sim_vcr_mdoors_rois <- all_sim_vcr_mdoors[all_sim_vcr_mdoors$roi %in% hyp_rois, ]
 all_sim_vcr_social_rois <- all_sim_vcr_social[all_sim_vcr_social$roi %in% hyp_rois, ]
@@ -862,8 +786,7 @@ p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) +
   geom_signif(comparisons = list(c("region08", "striatum_ventral")),
               map_signif_level = TRUE,
               annotations = c('*'), y_position = c(0.075,0.095), vjust=0.1) + 
-  scale_x_discrete(labels=c('TPJ','Region 8','Region 2','Ventral Striatum',
-                            'Dorsal Posterior \n Striatum')) + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Positive and Negative Win Similarity in Monetary Task") 
 
@@ -949,8 +872,7 @@ p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) +
               map_signif_level = TRUE,
               annotations = c('***','***','*','*'), 
               y_position = c(0.155,0.18,0.13,0.205), vjust=0.1) + 
-  scale_x_discrete(labels=c('TPJ','Region 8','Region 2','Ventral Striatum',
-                            'Dorsal Posterior \n Striatum')) + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Positive and Negative Win Similarity in Social Task")
 ggsave('rsa_vcr_social.png')
@@ -1151,7 +1073,7 @@ cb_vcr_social_fltr <- cb_vcr_social_behav[c('subject_id','z','ch_totanx','ch_cdi
 ```
 
 ```{r}
-anova_mod_cb_sim <- aov(z ~ ch_totanx*dep_group, data=cb_vcr_social_fltr)
+anova_mod_cb_sim <- aov(z ~ ch_totanx*ch_cdi_total, data=cb_vcr_social_fltr)
 summary(anova_mod_cb_sim)
 ```
 
