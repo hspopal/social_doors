@@ -10,7 +10,7 @@ output:
       collapsed: false
     toc_depth: 2
     df_print: paged
-    css: !expr here::here("./style_srk_behavioral.css")
+    css: !expr here::here("./code/style_srk_behavioral.css")
     knit: (function(inputFile, encoding) { 
       out_dir <- './';
       rmarkdown::render(inputFile,
@@ -211,7 +211,288 @@ ggsave('rdm_intract.png')
 ```
 
 
-# RSA Stats
+### Define Hypothesized ROIs
+```{r}
+hyp_rois <- c('TPJ_l-social', 'TPJ_r-social','dmPFC_b-social',
+              'region08', 'region06',
+              'striatum_ventral',
+              'region02')
+hyp_rois_names <- c('TPJ (l)', 'TPJ (r)', 'dmPFC',
+                    'CB Region 8','CB Region 6',
+                    'Ventral Striatum',
+                    'CB Region 2')
+```
+
+
+### Define color palette for plots
+```{r}
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+```
+
+
+
+
+
+
+
+
+
+***
+# Representational Similarity Analysis
+
+
+# Positive win is different from negative win
+```{r}
+all_sim_vcr <- read.csv(file='posnegwin_similarity.csv', header = TRUE)
+all_sim_vcr
+```
+
+
+```{r}
+# Use "adult as group label
+all_sim_vcr$group[all_sim_vcr$group == 'control'] <- 'adult'
+all_sim_vcr$group[all_sim_vcr$group == 'college'] <- 'adult'
+```
+
+
+
+Divide data by task
+```{r}
+all_sim_vcr_mdoors <- all_sim_vcr[all_sim_vcr$task %in% 'mdoors', ]
+all_sim_vcr_social <- all_sim_vcr[all_sim_vcr$task %in% 'social', ]
+
+```
+
+Filter data by hypothesized ROIs
+```{r}
+#hyp_rois <- c('striatum_ventral','striatum_dorsalp','region08','region02','TPJ_b-social')
+
+all_sim_vcr_mdoors_rois <- all_sim_vcr_mdoors[all_sim_vcr_mdoors$roi %in% hyp_rois, ]
+all_sim_vcr_social_rois <- all_sim_vcr_social[all_sim_vcr_social$roi %in% hyp_rois, ]
+#all_sim_vcr_social_rois$roi <- factor(all_sim_vcr_social_rois$roi, levels=hyp_rois)
+
+```
+
+
+Fischer r to z transform
+```{r}
+all_sim_vcr_mdoors_rois$z <- fisherz(all_sim_vcr_mdoors_rois$r)
+all_sim_vcr_social_rois$z <- fisherz(all_sim_vcr_social_rois$r)
+
+```
+
+
+
+
+```{r}
+
+all_sim_vcr_mdoors_rois.ttests <- data.frame(matrix(ncol=7,nrow=0))
+all_sim_vcr_social_rois.ttests <- data.frame(matrix(ncol=7,nrow=0))
+colnames(all_sim_vcr_mdoors_rois.ttests) <- c('roi','t_stat','p','estimate','CI_l','CI_h','df')
+colnames(all_sim_vcr_social_rois.ttests) <- c('roi','t_stat','p','estimate','CI_l','CI_h','df')
+
+row_n = 1
+for (roi in hyp_rois) {
+  # Filter for ROI data
+  roi_data_mdoors <- all_sim_vcr_mdoors_rois[all_sim_vcr_mdoors_rois$roi %in% roi, ]
+  roi_data_social <- all_sim_vcr_social_rois[all_sim_vcr_social_rois$roi %in% roi, ]
+  
+  # Calculate t-test
+  temp_ttest_mdoors <- t.test(roi_data_mdoors$r, mu=0)
+  temp_ttest_social <- t.test(roi_data_social$r, mu=0)
+  
+  # Fill in dataframe
+  all_sim_vcr_mdoors_rois.ttests[row_n,] <- c(roi,temp_ttest_mdoors$statistic,
+                                              temp_ttest_mdoors$p.value,
+                                              temp_ttest_mdoors$estimate, 
+                                              temp_ttest_mdoors$conf.int[1],
+                                              temp_ttest_mdoors$conf.int[2],
+                                              temp_ttest_mdoors$parameter[[1]])
+  all_sim_vcr_social_rois.ttests[row_n,] <- c(roi,temp_ttest_social$statistic,
+                                              temp_ttest_social$p.value,
+                                              temp_ttest_social$estimate, 
+                                              temp_ttest_social$conf.int[1],
+                                              temp_ttest_social$conf.int[2],
+                                              temp_ttest_social$parameter[[1]])
+      
+  # Increase counter for row numbers
+      
+  row_n = row_n+1
+}
+
+all_sim_vcr_mdoors_rois.ttests$p_adjust <- p.adjust(all_sim_vcr_mdoors_rois.ttests$p,
+                                                   method='fdr')
+all_sim_vcr_social_rois.ttests$p_adjust <- p.adjust(all_sim_vcr_social_rois.ttests$p,
+                                                   method='fdr')
+
+```
+
+
+## Monetary
+
+### ANOVA
+```{r}
+anova_mod_sim_vcr <- aov(r ~ roi, data=all_sim_vcr_mdoors_rois)
+summary(anova_mod_sim_vcr)
+```
+
+
+
+```{r}
+x <- all_sim_vcr_mdoors_rois$r
+factor <- all_sim_vcr_mdoors_rois$roi
+
+mean.sd <- function(x) c(mean = mean(x), sd = sd(x))
+simplify2array(tapply(x, factor, mean.sd))
+```
+
+
+## Post-hoc Tests
+```{r}
+tukey.test <- TukeyHSD(anova_mod_sim_vcr)
+tukey.test
+```
+
+```{r}
+stats <- compare_means(r ~ roi, , data = all_sim_vcr_mdoors_rois, method = "t.test",
+                       p.adjust.method = 'fdr')
+stats
+```
+
+```{r}
+P_adjust <- all_sim_vcr_mdoors_rois.ttests$p_adjust
+Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+                                             ifelse(P_adjust < 0.05, "*", "")))
+
+p <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi', 
+               y = 'r', add = 'mean_se',
+               fill=cbPalette[6],
+               position = position_dodge(0.8))
+p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
+  geom_signif(comparisons = list(c("region08", "striatum_ventral")),
+              map_signif_level = TRUE,
+              annotations = c('*'), y_position = c(0.075,0.095), vjust=0.1) + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
+  xlab("Regions of Interests") + ylab("Spearman's rho") + 
+  ggtitle("Positive and Negative Win Similarity in Monetary Task") 
+
+ggsave('rsa_vcr_mdoors.png')
+
+```
+
+
+
+### One sample t-tests
+#### Right Crus I
+```{r}
+roi_c1_r <- all_sim_vcr_mdoors[all_sim_vcr_mdoors$roi == 'region08',]$r
+roi_c1_z <- fisherz(roi_c1_r)
+t.test(roi_c1_z, mu = 0)
+```
+
+
+#### Bilateral Ventrial Striatum
+```{r}
+roi_VS_b <- all_sim_vcr_mdoors[all_sim_vcr_mdoors$roi == 'striatum_ventral',]$r
+roi_VS_z <- fisherz(roi_VS_b)
+t.test(roi_VS_z, mu = 0)
+```
+
+
+
+## Social
+
+### ANOVA
+```{r}
+anova_mod_sim_vcr <- aov(r ~ roi, data=all_sim_vcr_social_rois)
+summary(anova_mod_sim_vcr)
+```
+
+```{r}
+x <- all_sim_vcr_social_rois$r
+factor <- all_sim_vcr_social_rois$roi
+
+mean.sd <- function(x) c(mean = mean(x), sd = sd(x))
+simplify2array(tapply(x, factor, mean.sd))
+```
+
+```{r}
+tapply(x, factor, sd)
+```
+
+
+
+
+## Post-hoc Tests
+```{r}
+tukey.test <- TukeyHSD(anova_mod_sim_vcr)
+tukey.test
+```
+
+
+
+```{r}
+stats <- compare_means(r ~ roi, , data = all_sim_vcr_social_rois, method = "t.test",
+                       p.adjust.method = 'fdr')
+stats
+```
+
+
+
+
+```{r}
+
+P_adjust <- all_sim_vcr_social_rois.ttests$p_adjust
+Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+                                             ifelse(P_adjust < 0.05, "*", "")))
+
+p <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
+               y = 'r', add = 'mean_se',
+               fill=cbPalette[6],
+               position = position_dodge(0.8))
+p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
+  geom_signif(comparisons = list(c("region08", "striatum_ventral"),
+                                 c('region08','striatum_dorsalp'),
+                                 c('region08','region02'),
+                                 c('region08','TPJ_b-social')),
+              map_signif_level = TRUE,
+              annotations = c('***','***','*','*'), 
+              y_position = c(0.155,0.18,0.13,0.205), vjust=0.1) + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
+  xlab("Regions of Interests") + ylab("Spearman's rho") + 
+  ggtitle("Positive and Negative Win Similarity in Social Task")
+ggsave('rsa_vcr_social.png')
+
+```
+
+
+
+### One sample t-tests
+#### Right Crus I
+```{r}
+roi_c1_r <- all_sim_vcr_social[all_sim_vcr_social$roi == 'region08',]$r
+roi_c1_z <- fisherz(roi_c1_r)
+t.test(roi_c1_z, mu = 0)
+```
+
+
+#### Bilateral Ventrial Striatum
+```{r}
+roi_VS_b <- all_sim_vcr_social[all_sim_vcr_social$roi == 'striatum_ventral',]$r
+roi_VS_z <- fisherz(roi_VS_b)
+t.test(roi_VS_z, mu = 0)
+```
+
+
+
+
+
+
+
+
+
+
 
 ## Task Domain
 ```{r}
@@ -228,14 +509,6 @@ head(data_tdomain)
 
 Filter data by hypothesized ROIs
 ```{r}
-hyp_rois <- c('TPJ_l-social', 'TPJ_r-social','dmPFC_b-social',
-              'region08', 'region06',
-              'striatum_ventral',
-              'region02')
-hyp_rois_names <- c('TPJ (l)', 'TPJ (r)', 'dmPFC',
-                    'CB Region 8','CB Region 6',
-                    'Ventral Striatum',
-                    'CB Region 2')
 
 data_tdomain_rois <- data_tdomain[data_tdomain$roi %in% hyp_rois, ]
 
@@ -310,7 +583,6 @@ stats
 
 ### Visualization
 ```{r}
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 p <- ggbarplot(data_tdomain_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
@@ -655,258 +927,28 @@ ggsave('rsa_intract.png')
 
 
 ***
-# Positive win is different from negative win
-```{r}
-all_sim_vcr <- read.csv(file='posnegwin_similarity.csv', header = TRUE)
-all_sim_vcr
-```
 
-
-```{r}
-# Use "adult as group label
-all_sim_vcr$group[all_sim_vcr$group == 'control'] <- 'adult'
-all_sim_vcr$group[all_sim_vcr$group == 'college'] <- 'adult'
-```
-
-
-
-Divide data by task
-```{r}
-all_sim_vcr_mdoors <- all_sim_vcr[all_sim_vcr$task %in% 'mdoors', ]
-all_sim_vcr_social <- all_sim_vcr[all_sim_vcr$task %in% 'social', ]
-
-```
-
-Filter data by hypothesized ROIs
-```{r}
-#hyp_rois <- c('striatum_ventral','striatum_dorsalp','region08','region02','TPJ_b-social')
-
-all_sim_vcr_mdoors_rois <- all_sim_vcr_mdoors[all_sim_vcr_mdoors$roi %in% hyp_rois, ]
-all_sim_vcr_social_rois <- all_sim_vcr_social[all_sim_vcr_social$roi %in% hyp_rois, ]
-#all_sim_vcr_social_rois$roi <- factor(all_sim_vcr_social_rois$roi, levels=hyp_rois)
-
-```
-
-
-Fischer r to z transform
-```{r}
-all_sim_vcr_mdoors_rois$z <- fisherz(all_sim_vcr_mdoors_rois$r)
-all_sim_vcr_social_rois$z <- fisherz(all_sim_vcr_social_rois$r)
-
-```
-
-
-
-
-```{r}
-
-all_sim_vcr_mdoors_rois.ttests <- data.frame(matrix(ncol=7,nrow=0))
-all_sim_vcr_social_rois.ttests <- data.frame(matrix(ncol=7,nrow=0))
-colnames(all_sim_vcr_mdoors_rois.ttests) <- c('roi','t_stat','p','estimate','CI_l','CI_h','df')
-colnames(all_sim_vcr_social_rois.ttests) <- c('roi','t_stat','p','estimate','CI_l','CI_h','df')
-
-row_n = 1
-for (roi in hyp_rois) {
-  # Filter for ROI data
-  roi_data_mdoors <- all_sim_vcr_mdoors_rois[all_sim_vcr_mdoors_rois$roi %in% roi, ]
-  roi_data_social <- all_sim_vcr_social_rois[all_sim_vcr_social_rois$roi %in% roi, ]
-  
-  # Calculate t-test
-  temp_ttest_mdoors <- t.test(roi_data_mdoors$r, mu=0)
-  temp_ttest_social <- t.test(roi_data_social$r, mu=0)
-  
-  # Fill in dataframe
-  all_sim_vcr_mdoors_rois.ttests[row_n,] <- c(roi,temp_ttest_mdoors$statistic,
-                                              temp_ttest_mdoors$p.value,
-                                              temp_ttest_mdoors$estimate, 
-                                              temp_ttest_mdoors$conf.int[1],
-                                              temp_ttest_mdoors$conf.int[2],
-                                              temp_ttest_mdoors$parameter[[1]])
-  all_sim_vcr_social_rois.ttests[row_n,] <- c(roi,temp_ttest_social$statistic,
-                                              temp_ttest_social$p.value,
-                                              temp_ttest_social$estimate, 
-                                              temp_ttest_social$conf.int[1],
-                                              temp_ttest_social$conf.int[2],
-                                              temp_ttest_social$parameter[[1]])
-      
-  # Increase counter for row numbers
-      
-  row_n = row_n+1
-}
-
-all_sim_vcr_mdoors_rois.ttests$p_adjust <- p.adjust(all_sim_vcr_mdoors_rois.ttests$p,
-                                                   method='fdr')
-all_sim_vcr_social_rois.ttests$p_adjust <- p.adjust(all_sim_vcr_social_rois.ttests$p,
-                                                   method='fdr')
-
-```
-
-
-## Monetary
-
-### ANOVA
-```{r}
-anova_mod_sim_vcr <- aov(r ~ roi, data=all_sim_vcr_mdoors_rois)
-summary(anova_mod_sim_vcr)
-```
-
-
-
-```{r}
-x <- all_sim_vcr_mdoors_rois$r
-factor <- all_sim_vcr_mdoors_rois$roi
-
-mean.sd <- function(x) c(mean = mean(x), sd = sd(x))
-simplify2array(tapply(x, factor, mean.sd))
-```
-
-
-## Post-hoc Tests
-```{r}
-tukey.test <- TukeyHSD(anova_mod_sim_vcr)
-tukey.test
-```
-
-```{r}
-stats <- compare_means(r ~ roi, , data = all_sim_vcr_mdoors_rois, method = "t.test",
-                       p.adjust.method = 'fdr')
-stats
-```
-
-```{r}
-P_adjust <- all_sim_vcr_mdoors_rois.ttests$p_adjust
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-
-p <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi', 
-               y = 'r', add = 'mean_se',
-               fill=cbPalette[6],
-               position = position_dodge(0.8))
-p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  geom_signif(comparisons = list(c("region08", "striatum_ventral")),
-              map_signif_level = TRUE,
-              annotations = c('*'), y_position = c(0.075,0.095), vjust=0.1) + 
-  #scale_x_discrete(labels=hyp_rois_names) + 
-  xlab("Regions of Interests") + ylab("Spearman's rho") + 
-  ggtitle("Positive and Negative Win Similarity in Monetary Task") 
-
-ggsave('rsa_vcr_mdoors.png')
-
-```
-
-
-
-### One sample t-tests
-#### Right Crus I
-```{r}
-roi_c1_r <- all_sim_vcr_mdoors[all_sim_vcr_mdoors$roi == 'region08',]$r
-roi_c1_z <- fisherz(roi_c1_r)
-t.test(roi_c1_z, mu = 0)
-```
-
-
-#### Bilateral Ventrial Striatum
-```{r}
-roi_VS_b <- all_sim_vcr_mdoors[all_sim_vcr_mdoors$roi == 'striatum_ventral',]$r
-roi_VS_z <- fisherz(roi_VS_b)
-t.test(roi_VS_z, mu = 0)
-```
-
-
-
-## Social
-
-### ANOVA
-```{r}
-anova_mod_sim_vcr <- aov(r ~ roi, data=all_sim_vcr_social_rois)
-summary(anova_mod_sim_vcr)
-```
-
-```{r}
-x <- all_sim_vcr_social_rois$r
-factor <- all_sim_vcr_social_rois$roi
-
-mean.sd <- function(x) c(mean = mean(x), sd = sd(x))
-simplify2array(tapply(x, factor, mean.sd))
-```
-
-```{r}
-tapply(x, factor, sd)
-```
-
-
-
-
-## Post-hoc Tests
-```{r}
-tukey.test <- TukeyHSD(anova_mod_sim_vcr)
-tukey.test
-```
-
-
-
-```{r}
-stats <- compare_means(r ~ roi, , data = all_sim_vcr_social_rois, method = "t.test",
-                       p.adjust.method = 'fdr')
-stats
-```
-
-
-
-
-```{r}
-
-P_adjust <- all_sim_vcr_social_rois.ttests$p_adjust
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-
-p <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
-               y = 'r', add = 'mean_se',
-               fill=cbPalette[6],
-               position = position_dodge(0.8))
-p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  geom_signif(comparisons = list(c("region08", "striatum_ventral"),
-                                 c('region08','striatum_dorsalp'),
-                                 c('region08','region02'),
-                                 c('region08','TPJ_b-social')),
-              map_signif_level = TRUE,
-              annotations = c('***','***','*','*'), 
-              y_position = c(0.155,0.18,0.13,0.205), vjust=0.1) + 
-  #scale_x_discrete(labels=hyp_rois_names) + 
-  xlab("Regions of Interests") + ylab("Spearman's rho") + 
-  ggtitle("Positive and Negative Win Similarity in Social Task")
-ggsave('rsa_vcr_social.png')
-
-```
-
-
-
-### One sample t-tests
-#### Right Crus I
-```{r}
-roi_c1_r <- all_sim_vcr_social[all_sim_vcr_social$roi == 'region08',]$r
-roi_c1_z <- fisherz(roi_c1_r)
-t.test(roi_c1_z, mu = 0)
-```
-
-
-#### Bilateral Ventrial Striatum
-```{r}
-roi_VS_b <- all_sim_vcr_social[all_sim_vcr_social$roi == 'striatum_ventral',]$r
-roi_VS_z <- fisherz(roi_VS_b)
-t.test(roi_VS_z, mu = 0)
-```
 
 
 ## Combine one-sample t-test data
 ```{r}
-all_sim_cex_mdoors_rois.ttests$source <- 'cex_mdoors'
-all_sim_cex_social_rois.ttests$source <- 'cex_social'
+data_tdomain_rois.ttests$source <- 'tdomain'
+data_valence_rois.ttests$source <- 'valence'
+data_outcome_rois.ttests$source <- 'outcome'
+data_outcval_rois.ttests$source <- 'outcval'
+data_intract_rois.ttests$source <- 'intract'
+
 all_sim_vcr_mdoors_rois.ttests$source <- 'vcr_mdoors'
 all_sim_vcr_social_rois.ttests$source <- 'vcr_social'
 
-one_sample_ttests <- rbind(all_sim_cex_mdoors_rois.ttests, all_sim_cex_social_rois.ttests,
-                     all_sim_vcr_mdoors_rois.ttests, all_sim_vcr_social_rois.ttests)
+
+one_sample_ttests <- rbind(data_tdomain_rois.ttests,
+                           data_valence_rois.ttests,
+                           data_outcome_rois.ttests,
+                           data_outcval_rois.ttests,
+                           data_intract_rois.ttests,
+                           all_sim_vcr_mdoors_rois.ttests, 
+                           all_sim_vcr_social_rois.ttests)
 
 ```
 
