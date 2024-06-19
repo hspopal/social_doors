@@ -213,11 +213,11 @@ ggsave('rdm_intract.png')
 
 ### Define Hypothesized ROIs
 ```{r}
-hyp_rois <- c('TPJ_l-social', 'TPJ_r-social','dmPFC_b-social',
+hyp_rois <- c('TPJ_b-social', 'dmPFC_b-social',
               'region08', 'region06',
               'striatum_ventral',
               'region02')
-hyp_rois_names <- c('TPJ (l)', 'TPJ (r)', 'dmPFC',
+hyp_rois_names <- c('TPJ', 'dmPFC',
                     'CB Region 8','CB Region 6',
                     'Ventral Striatum',
                     'CB Region 2')
@@ -452,13 +452,13 @@ p <- ggbarplot(all_sim_vcr_social_rois, x = 'roi',
                fill=cbPalette[6],
                position = position_dodge(0.8))
 p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  geom_signif(comparisons = list(c("region08", "striatum_ventral"),
-                                 c('region08','striatum_dorsalp'),
-                                 c('region08','region02'),
-                                 c('region08','TPJ_b-social')),
-              map_signif_level = TRUE,
-              annotations = c('***','***','*','*'), 
-              y_position = c(0.155,0.18,0.13,0.205), vjust=0.1) + 
+  #geom_signif(comparisons = list(c("region08", "striatum_ventral"),
+  #                               c('region08','striatum_dorsalp'),
+  #                               c('region08','region02'),
+  #                               c('region08','TPJ_b-social')),
+  #            map_signif_level = TRUE,
+  #            annotations = c('***','***','*','*'), 
+  #            y_position = c(0.155,0.18,0.13,0.205), vjust=0.1) + 
   #scale_x_discrete(labels=hyp_rois_names) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Positive and Negative Win Similarity in Social Task")
