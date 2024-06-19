@@ -39,6 +39,9 @@ library(psych)
 library(ggpubr)
 library(stringr)
 library(kableExtra)
+library(grid)
+library(pBrackets)
+
 ```
 
 ```{r}
@@ -75,7 +78,7 @@ rdm_tdomain_melt <- melt(rdm_tdomain)
 ggplot(rdm_tdomain_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
   geom_tile(width = 1, color = 'grey') +
   theme_minimal() + 
-  scale_fill_distiller(palette = "Oranges", direction = 1) + 
+  scale_fill_distiller(palette = "Greens", direction = 1) + 
   labs(title = "Task Domain RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
@@ -105,7 +108,7 @@ rdm_valence_melt <- melt(rdm_valence)
 ggplot(rdm_valence_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
   geom_tile(width = 1, color = 'grey') +
   theme_minimal() + 
-  scale_fill_distiller(palette = "Oranges", direction = 1) + 
+  scale_fill_distiller(palette = "Greens", direction = 1) + 
   labs(title = "Valence RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
@@ -136,7 +139,7 @@ rdm_outcome_melt <- melt(rdm_outcome)
 ggplot(rdm_outcome_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
   geom_tile(width = 1, color = 'grey') +
   theme_minimal() + 
-  scale_fill_distiller(palette = "Oranges", direction = 1) + 
+  scale_fill_distiller(palette = "Greens", direction = 1) + 
   labs(title = "Outcome RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
@@ -168,7 +171,7 @@ rdm_outcval_melt <- melt(rdm_outcval)
 ggplot(rdm_outcval_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
   geom_tile(width = 1, color = 'grey') +
   theme_minimal() + 
-  scale_fill_distiller(palette = "Oranges", direction = 1) + 
+  scale_fill_distiller(palette = "Greens", direction = 1) + 
   labs(title = "Outcome Valence RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
@@ -200,7 +203,7 @@ rdm_intract_melt <- melt(rdm_intract)
 ggplot(rdm_intract_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
   geom_tile(width = 1, color = 'grey') +
   theme_minimal() + 
-  scale_fill_distiller(palette = "Oranges", direction = 1) + 
+  scale_fill_distiller(palette = "Greens", direction = 1) + 
   labs(title = "Valence Outcome Interaction RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
@@ -355,25 +358,51 @@ tukey.test
 ```
 
 ```{r}
-stats <- compare_means(r ~ roi, , data = all_sim_vcr_mdoors_rois, method = "t.test",
-                       p.adjust.method = 'fdr')
-stats
+all_sim_vcr_social_rois.two_ttests <- compare_means(r ~ roi, , 
+                                                    data = all_sim_vcr_mdoors_rois, 
+                                                    method = "t.test",
+                                                    p.adjust.method = 'fdr')
+all_sim_vcr_social_rois.two_ttests
 ```
 
+
+
+Specify ROI plotting order on the x-axis
 ```{r}
-P_adjust <- all_sim_vcr_mdoors_rois.ttests$p_adjust
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
+roi_plot_order <- c('TPJ_b-social', 'dmPFC_b-social', 'striatum_ventral',
+                    'region06', 'region08','region02')
+
+roi_plot_label <- c('TPJ', 'dmPFC', 'Ventral Striatum',
+                    'CB Region 6', 'CB Region 8','CB Region 2')
+```
+
+
+
+
+```{r}
+#P_adjust <- all_sim_vcr_mdoors_rois.ttests$p_adjust
+#Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+#                                             ifelse(P_adjust < 0.05, "*", "")))
+
+# Rearrange x-axis labels
+all_sim_vcr_mdoors_rois$roi <- factor(all_sim_vcr_mdoors_rois$roi, 
+                                      levels=roi_plot_order)
+
+
 
 p <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
                fill=cbPalette[6],
                position = position_dodge(0.8))
 p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  geom_signif(comparisons = list(c("region08", "striatum_ventral")),
+  geom_signif(comparisons = list(c('region06', 'dmPFC_b-social'),
+                                 c('region06', 'striatum_ventral'),
+                                 c('region08', 'striatum_ventral')),
               map_signif_level = TRUE,
-              annotations = c('*'), y_position = c(0.075,0.095), vjust=0.1) + 
-  #scale_x_discrete(labels=hyp_rois_names) + 
+              annotations = c('**','***','**'), y_position = c(0.1,0.08,0.12),
+                            tip_length = 0,
+                            vjust=0.1) + 
+  scale_x_discrete(labels=roi_plot_label) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Positive and Negative Win Similarity in Monetary Task") 
 
@@ -441,25 +470,31 @@ stats
 
 
 
+
 ```{r}
 
-P_adjust <- all_sim_vcr_social_rois.ttests$p_adjust
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
+#P_adjust <- all_sim_vcr_social_rois.ttests$p_adjust
+#Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+#                                             ifelse(P_adjust < 0.05, "*", "")))
+
+all_sim_vcr_social_rois$roi <- factor(all_sim_vcr_social_rois$roi, 
+                                      levels=roi_plot_order)
 
 p <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
                fill=cbPalette[6],
                position = position_dodge(0.8))
 p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  #geom_signif(comparisons = list(c("region08", "striatum_ventral"),
-  #                               c('region08','striatum_dorsalp'),
-  #                               c('region08','region02'),
-  #                               c('region08','TPJ_b-social')),
-  #            map_signif_level = TRUE,
-  #            annotations = c('***','***','*','*'), 
-  #            y_position = c(0.155,0.18,0.13,0.205), vjust=0.1) + 
-  #scale_x_discrete(labels=hyp_rois_names) + 
+  geom_signif(comparisons = list(c('region06','TPJ_b-social'),
+                                 c('region06','region02'),
+                                 c('region06','striatum_ventral'),
+                                 c('region08','TPJ_b-social'),
+                                 c('region08','region02'),
+                                 c('region08','striatum_ventral')),
+              map_signif_level = TRUE,
+              annotations = c('**','**','***','*','*','**'), 
+              y_position = c(0.16,0.14,0.125,0.245,.2,.22), tip_length = 0) + 
+  scale_x_discrete(labels=roi_plot_label) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Positive and Negative Win Similarity in Social Task")
 ggsave('rsa_vcr_social.png')
