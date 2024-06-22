@@ -7,8 +7,11 @@
 
 ### Univariate
 - social_doors_1st_level-nilearn.py
+  - Create subject level beta and contrast maps, across runs
 - social_doors_1st_level-nilearn-indiv_runs.py
+  - Create subject level beta maps for each run
 - social_doors_2nd_level-nilearn.ipynb - done
+  - Whole brain second level (between-subjects) analyses
 
 ### Psychophysiological Interactions
 - ppi_cerebellum.ipynb
