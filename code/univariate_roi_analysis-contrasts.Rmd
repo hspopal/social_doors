@@ -155,6 +155,8 @@ allg_data_social <- allg_data[allg_data$task %in% 'social', ]
 #allg_data$contrast_mean <- allg_data$contrast_mean * -1
 ```
 
+
+### Monetary
 ```{r}
 # Test whether each group differs from 0
 t_tests = allg_data_mdoors %>%
@@ -190,7 +192,7 @@ Sig_adjust
 
 
 
-
+### Social
 ```{r}
 # Test whether each group differs from 0
 t_tests = allg_data_social %>%
@@ -244,14 +246,35 @@ allg_data <- allg_data[allg_data$roi %in% hyp_rois, ]
 ```
 
 
+Specify ROI plotting order on the x-axis
+```{r}
+roi_plot_order <- c('TPJ_b-social', 'ATL_b-social', 'AMG_r-social', 
+                    'PCC_b-social', 'dmPFC_b-social', 'vmPFC_b-reward', 
+                    'region01', 'region02', 'region05', 'region06', 'region07',
+                    'region08', 'region09', 'region10', 'striatum_ventral',
+                    'striatum_dorsala', 'striatum_dorsalp')
+
+roi_plot_label <- c('TPJ', 'ATL', 'AMG (r)', 'PCC', 'dmPFC', 'vmPFC', 
+                    'CB Region 1', 'CB Region 2', 'CB Region 5', 'CB Region 6', 
+                    'CB Region 7', 'CB Region 8', 'CB Region 9', 'CB Region 10', 
+                    'Ventral Striatum', 'Dorsal Anterior\nStriatum',  
+                    'Dorsal Posterior\nStriatum')
+```
+
 ```{r}
 allg_data_mdoors <- allg_data[allg_data$task %in% 'mdoors', ]
 allg_data_social <- allg_data[allg_data$task %in% 'social', ]
 
+# Rearrange x-axis labels
+allg_data_mdoors$roi <- factor(allg_data_mdoors$roi, 
+                                      levels=roi_plot_order)
 
-#allg_data$contrast_mean <- allg_data$contrast_mean * -1
+allg_data_social$roi <- factor(allg_data_social$roi, 
+                                      levels=roi_plot_order)
 ```
 
+
+### Monetary
 ```{r}
 # Test whether each group differs from 0
 t_tests_mdoors = allg_data_mdoors %>%
@@ -280,8 +303,38 @@ p + geom_text(aes(label = Sig, y = 0.2), size = 6,
 ggsave('../univariate_roi/allp_all_winVlos_anova_bar_mdoors.png')
 ```
 
+```{r}
+# Test whether each group differs from 0
+t_tests_mdoors = allg_data_mdoors %>%
+    group_by(roi) %>%
+    summarise(t = t.test(contrast_mean, mu = 0)$statistic,
+              M = t.test(contrast_mean, mu = 0)$estimate,
+              P = t.test(contrast_mean, mu = 0)$p.value,
+              Sig = ifelse(P < 0.005, "***", ifelse(P < 0.01, "**", ifelse(P < 0.05, "*", ""))),
+              CI_l = t.test(contrast_mean, mu = 0)$conf.int[1],
+              CI_h = t.test(contrast_mean, mu = 0)$conf.int[2],
+              MaxWidth = max(contrast_mean))
+P_adjust <- p.adjust(t_tests_mdoors$P, method='fdr')
+Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+                                             ifelse(P_adjust < 0.05, "*", "")))
 
-### Create bar graph
+
+p <- ggbarplot(allg_data_mdoors, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se',
+               position = position_dodge(0.8))
+p + geom_text(aes(label = Sig, y = 0.2), size = 6,
+              data = t_tests_mdoors) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  scale_x_discrete(labels=roi_plot_label) + 
+  xlab("Regions of Interests") + ylab("Mean Response (all wins > all losses)")
+```
+
+
+
+
+
+
+### Social
 Automatically adds significance astericks with FDR correction
 ```{r}
 # Test whether each group differs from 0
@@ -311,8 +364,9 @@ ggsave('../univariate_roi/allp_all_winVlos_anova_bar_social.png')
 ```
 
 
+# Supplementary Analyses
 
-
+## Monetary vs Social
 ```{r}
 
 allg_data$roi <- factor(allg_data$roi, levels = sort(unique(allg_data$roi)))
@@ -342,7 +396,7 @@ p + scale_fill_identity(colors) +
 
 
 
-# Between group effects
+## Between group effects
 
 ```{r}
 #sig_rois_data <- data.frame(matrix(ncol=7,nrow=0))
