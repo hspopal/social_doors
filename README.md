@@ -6,6 +6,11 @@
 ## Analyses
 
 ### Univariate
+#### ROI
+- univariate_roi_analysis-contrasts-group.Rmd
+  - Group level ROI contrast analyses
+  - Includes within and between group analyses
+#### Whole-Brain
 - social_doors_1st_level-nilearn.py
   - Create subject level beta and contrast maps, across runs
 - social_doors_1st_level-nilearn-indiv_runs.py
