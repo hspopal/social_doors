@@ -54,7 +54,6 @@ participants
 ```{r}
 all_sub_roi_con <- read.csv('../univariate_roi/all_sub_roi_contrasts.csv')
 all_sub_roi_con$subject_id <- all_sub_roi_con$subj
-#all_sub_roi_con <- subset(all_sub_roi_con, select = -c(subj))
 
 # Use "adult as group label
 all_sub_roi_con$group[all_sub_roi_con$group == 'control'] <- 'college'
@@ -78,60 +77,10 @@ hyp_rois_names <- c('TPJ','ATL','AMG (r)','PCC','dmPFC',
                     'CB Region 6','CB Region 7','CB Region 8','CB Region 9','CB Region 10',
                     'Ventral Striatum','Anterior \n Dorsal Striatum','Posterior \n Dorsal Striatum')
 
+# Turn ROI column into a factor for sorting during visualization
 all_sub_roi_con$roi <- factor(all_sub_roi_con$roi, levels=hyp_rois)
 ```
 
-
-
-```{r}
-
-all_tstats_combined <- data.frame(matrix(ncol=6,nrow=0))
-colnames(all_tstats_combined) <- c('task','contrast','roi','t_stat','p.adj','estimate')
-
-tasks <- c('mdoors','social')
-contrasts <- c('positive_winVlos', 'all_winVlos')
-
-
-row_n = 1
-for (task in tasks) {
-  # Filter for task data
-  
-  task_data <- all_sub_roi_con[all_sub_roi_con$task %in% task, ]
-  
-  for (contrast in contrasts) {
-    # Filter contrast data
-    contrast_data <- task_data[task_data$contrast %in% contrast, ]
-    
-    for (roi in hyp_rois) {
-      # Filter for ROI data
-      roi_data <- contrast_data[contrast_data$roi %in% roi, ]
-      
-      # Calculate t-test
-      temp_ttest <- t.test(roi_data$contrast_mean, mu=0)
-      
-      # Fill in dataframe
-      all_tstats_combined[row_n,] <- c(task,contrast,roi,
-                                 temp_ttest$statistic, temp_ttest$p.value,
-                                 temp_ttest$estimate)
-      
-      # Increase counter for row numbers
-      
-      row_n = row_n+1
-    }
-  }
-}
-
-
-
-```
-
-Change numbers to numeric
-```{r}
-all_tstats_combined <- transform(all_tstats_combined, t_stat = as.numeric(t_stat),
-                                          p = as.numeric(p.adj),
-                                          estimate = as.numeric(estimate))
-
-```
 
 
 
@@ -139,38 +88,34 @@ all_tstats_combined <- transform(all_tstats_combined, t_stat = as.numeric(t_stat
 
 ## Young Adults
 ```{r}
+# Filter data for group, contrast, and ROIs
 adult_data <- all_sub_roi_con[all_sub_roi_con$group %in% 'college', ]
 adult_data_pos <- adult_data[adult_data$contrast %in% 'positive_winVlos', ]
 adult_data_pos <- adult_data_pos[adult_data_pos$roi %in% hyp_rois, ]
 
-#allg_data$contrast_mean <- allg_data$contrast_mean * -1
-```
-
-```{r}
+# Filter for task
 adult_data_pos_mdoors <- adult_data_pos[adult_data_pos$task %in% 'mdoors', ]
 adult_data_pos_social <- adult_data_pos[adult_data_pos$task %in% 'social', ]
-
-
-#allg_data$contrast_mean <- allg_data$contrast_mean * -1
 ```
 
 
 ### Monetary Task
 ```{r}
+# Conduct one-sample t-tests to examine if ROI contrast is greater than 0
 adult_data_pos_mdoors.t_tests = adult_data_pos_mdoors %>%
                                 group_by(roi) %>%
                                 summarise(P = t.test(contrast_mean, mu = 0)$p.value,
                                           Sig = ifelse(P < 0.05, "*", ""),
                                           MaxWidth = max(contrast_mean))
 
-
+# Conduct multiple comparisons correction
 stats <- p.adjust(adult_data_pos_mdoors.t_tests$P,method='fdr')
 P_adjust <- stats
 Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                              ifelse(P_adjust < 0.05, "*", "")))
-
 adult_data_pos_mdoors.t_tests$Sig_adjust <- Sig_adjust
 
+# Plot
 p <- ggbarplot(adult_data_pos_mdoors, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se',
                position = position_dodge(0.8))
@@ -179,24 +124,27 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
+
 ggsave('../univariate_roi/adult_pos_winVlos_ttest_bar_mdoors.png')
 ```
 
 ### Social Task
 ```{r}
+# Conduct one-sample t-tests to examine if ROI contrast is greater than 0
 adult_data_pos_social.t_tests = adult_data_pos_social %>%
     group_by(roi) %>%
     summarise(P = t.test(contrast_mean, mu = 0)$p.value,
               Sig = ifelse(P < 0.05, "*", ""),
               MaxWidth = max(contrast_mean))
 
-
+# Conduct multiple comparisons correction
 stats <- p.adjust(adult_data_pos_social.t_tests$P,method='fdr')
 P_adjust <- stats
 Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                              ifelse(P_adjust < 0.05, "*", "")))
 adult_data_pos_social.t_tests$Sig_adjust <- Sig_adjust 
 
+# Plot
 p <- ggbarplot(adult_data_pos_social, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se',
                position = position_dodge(0.8))
@@ -205,43 +153,39 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
+
 ggsave('../univariate_roi/adult_pos_winVlos_ttest_bar_social.png')
 ```
 
 
 ## Adolescents
 ```{r}
+# Filter data
 adole_data <- all_sub_roi_con[all_sub_roi_con$group %in% 'kid', ]
 adole_data_pos <- adole_data[adole_data$contrast %in% 'positive_winVlos', ]
 adole_data_pos <- adole_data_pos[adole_data_pos$roi %in% hyp_rois, ]
 
-#allg_data$contrast_mean <- allg_data$contrast_mean * -1
-```
-
-```{r}
 adole_data_pos_mdoors <- adole_data_pos[adole_data_pos$task %in% 'mdoors', ]
 adole_data_pos_social <- adole_data_pos[adole_data_pos$task %in% 'social', ]
-
-
-#allg_data$contrast_mean <- allg_data$contrast_mean * -1
 ```
-
 
 ### Monetary Task
 ```{r}
+# One sample t-tests
 adole_data_pos_mdoors.t_tests = adole_data_pos_mdoors %>%
     group_by(roi) %>%
     summarise(P = t.test(contrast_mean, mu = 0)$p.value,
               Sig = ifelse(P < 0.05, "*", ""),
               MaxWidth = max(contrast_mean))
 
-
+# Multiple comparisons correction
 stats <- p.adjust(adole_data_pos_mdoors.t_tests$P,method='fdr')
 P_adjust <- stats
 Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                              ifelse(P_adjust < 0.05, "*", "")))
 adole_data_pos_mdoors.t_tests$Sig_adjust <- Sig_adjust
 
+# Plot
 p <- ggbarplot(adole_data_pos_mdoors, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se',
                position = position_dodge(0.8))
@@ -250,25 +194,28 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
+
 ggsave('../univariate_roi/adole_pos_winVlos_ttest_bar_mdoors.png')
 ```
 
 
 ### Social Task
 ```{r}
+# One sample t-tests
 adole_data_pos_social.t_tests = adole_data_pos_social %>%
     group_by(roi) %>%
     summarise(P = t.test(contrast_mean, mu = 0)$p.value,
               Sig = ifelse(P < 0.05, "*", ""),
               MaxWidth = max(contrast_mean))
 
-
+# Multiple comparisons correction
 stats <- p.adjust(adole_data_pos_social.t_tests$P,method='fdr')
 P_adjust <- stats
 Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                              ifelse(P_adjust < 0.05, "*", "")))
 adole_data_pos_social.t_tests$Sig_adjust <- Sig_adjust
 
+# Plot
 p <- ggbarplot(adole_data_pos_social, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se',
                position = position_dodge(0.8))
@@ -277,6 +224,7 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
+
 ggsave('../univariate_roi/adole_pos_winVlos_ttest_bar_social.png')
 ```
 
@@ -285,10 +233,9 @@ ggsave('../univariate_roi/adole_pos_winVlos_ttest_bar_social.png')
 ## Group Differences
 
 ```{r}
+# Filter data
 allg_data_pos <- all_sub_roi_con[all_sub_roi_con$contrast %in% 'positive_winVlos', ]
 allg_data_pos <- allg_data_pos[allg_data_pos$roi %in% hyp_rois, ]
-
-#allg_data$contrast_mean <- allg_data$contrast_mean * -1
 ```
 
 ### Monetary Task
@@ -298,6 +245,7 @@ allg_data_pos_mdoors <- allg_data_pos[allg_data_pos$task %in% 'mdoors', ]
 ```
 
 ```{r}
+# Conduct ANOVA
 model_allg_pos_mdoors <- aov(contrast_mean ~ group*roi,
                            data = allg_data_pos_mdoors)
 summary(model_allg_pos_mdoors)
@@ -305,19 +253,21 @@ summary(model_allg_pos_mdoors)
 
 
 ```{r}
+# Conduct t-tests between each group, for each ROI
 allg_data_pos_mdoors.t_tests = allg_data_pos_mdoors %>%
     group_by(roi) %>%
     summarise(P = t.test(contrast_mean ~ group, mu = 0)$p.value,
               Sig = ifelse(P < 0.05, "*", ""),
               MaxWidth = max(contrast_mean))
 
-
+# Conduct multiple comparisons correction
 stats <- p.adjust(allg_data_pos_mdoors.t_tests$P, method='fdr')
 P_adjust <- stats
 Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                              ifelse(P_adjust < 0.05, "*", "")))
 allg_data_pos_mdoors.t_tests$Sig_adjust <- Sig_adjust
 
+# Plot
 p <- ggbarplot(allg_data_pos_mdoors, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se',
                color = 'group', position = position_dodge(0.8))
@@ -326,38 +276,21 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
-#p + stat_compare_means(aes(group = group), label = 'p.signif', label.y=0.3) + 
-#  theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-#  scale_x_discrete(labels=hyp_rois_names)
 
 ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_mdoors.png')
 
-```
-
-
-
-
-
-
-```{r}
-p <- ggbarplot(allg_data_pos_mdoors, x = 'roi', 
-               y = 'contrast_mean', add = 'mean_se',
-               color = 'group', position = position_dodge(0.8))
-p + stat_compare_means(aes(group = group), label = 'p.signif', label.y=0.3) + 
-  theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  scale_x_discrete(labels=hyp_rois_names)
-
-ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_mdoors.png')
 ```
 
 
 ### Social Task
 
 ```{r}
+# Filter data
 allg_data_pos_social <- allg_data_pos[allg_data_pos$task %in% 'social', ]
 ```
 
 ```{r}
+# Conduct ANOVA
 model_allg_pos_social <- aov(contrast_mean ~ group*roi,
                            data = allg_data_pos_social)
 summary(model_allg_pos_social)
@@ -365,19 +298,21 @@ summary(model_allg_pos_social)
 
 
 ```{r}
+# Conduct two-sample t-test
 allg_data_pos_social.t_tests = allg_data_pos_social %>%
     group_by(roi) %>%
     summarise(P = t.test(contrast_mean ~ group, mu = 0)$p.value,
               Sig = ifelse(P < 0.05, "*", ""),
               MaxWidth = max(contrast_mean))
 
-
+# Multiple comparisons correction
 stats <- p.adjust(allg_data_pos_social.t_tests$P, method='fdr')
 P_adjust <- stats
 Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                              ifelse(P_adjust < 0.05, "*", "")))
 allg_data_pos_social.t_tests$Sig_adjust <- Sig_adjust
 
+# Plot
 p <- ggbarplot(allg_data_pos_social, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se',
                color = 'group', position = position_dodge(0.8))
@@ -386,9 +321,6 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
-#p + stat_compare_means(aes(group = group), label = 'p.signif', label.y=0.3) + 
-#  theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-#  scale_x_discrete(labels=hyp_rois_names)
 
 ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_social.png')
 
@@ -397,54 +329,37 @@ ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_social.png')
 
 
 
-```{r}
-p <- ggbarplot(allg_data_pos_social, x = 'roi', 
-               y = 'contrast_mean', add = 'mean_se',
-               color = 'group', position = position_dodge(0.8))
-p + stat_compare_means(aes(group = group), label = 'p.signif', label.y=0.3) + 
-  theme(axis.text.x = element_text(angle =45, vjust = 0.5))
-
-#ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_social.png')
-```
-
-
-
-
 # All Wins vs Loses
 
 ## Young Adults
 ```{r}
+# Filter data
 adult_data <- all_sub_roi_con[all_sub_roi_con$group %in% 'college', ]
 adult_data_all <- adult_data[adult_data$contrast %in% 'all_winVlos', ]
 adult_data_all <- adult_data_all[adult_data_all$roi %in% hyp_rois, ]
 
-#allg_data$contrast_mean <- allg_data$contrast_mean * -1
-```
-
-```{r}
 adult_data_all_mdoors <- adult_data_all[adult_data_all$task %in% 'mdoors', ]
 adult_data_all_social <- adult_data_all[adult_data_all$task %in% 'social', ]
-
-
-#allg_data$contrast_mean <- allg_data$contrast_mean * -1
 ```
 
 
 ### Monetary Task
 ```{r}
+# Conduct t-tests
 adult_data_all_mdoors.t_tests = adult_data_all_mdoors %>%
     group_by(roi) %>%
     summarise(P = t.test(contrast_mean, mu = 0)$p.value,
               Sig = ifelse(P < 0.05, "*", ""),
               MaxWidth = max(contrast_mean))
 
-
+# Multiple comparisons correction
 stats <- p.adjust(adult_data_all_mdoors.t_tests$P,method='fdr')
 P_adjust <- stats
 Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                              ifelse(P_adjust < 0.05, "*", "")))
 adult_data_all_mdoors.t_tests$Sig_adjust <- Sig_adjust
 
+# Plot
 p <- ggbarplot(adult_data_all_mdoors, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se',
                position = position_dodge(0.8))
@@ -453,50 +368,28 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (all wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
+
 ggsave('../univariate_roi/adult_all_winVlos_ttest_bar_mdoors.png')
 ```
 
 ### Social Task
 
 ```{r}
-adult_data_all_mdoors.t_tests = adult_data_all_mdoors %>%
-    group_by(roi) %>%
-    summarise(P = t.test(contrast_mean, mu = 0)$p.value,
-              Sig = ifelse(P < 0.05, "*", ""),
-              MaxWidth = max(contrast_mean))
-
-
-stats <- p.adjust(adult_data_all_mdoors.t_tests$P,method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-adult_data_all_mdoors.t_tests$Sig_adjust <- Sig_adjust
-
-p <- ggbarplot(adult_data_all_mdoors, x = 'roi', 
-               y = 'contrast_mean', add = 'mean_se',
-               position = position_dodge(0.8))
-p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
-              data = adult_data_all_mdoors.t_tests) + 
-  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
-  xlab("Regions of Interests") + ylab("Mean Response (all wins > losses)") + 
-  scale_x_discrete(labels=hyp_rois_names)
-ggsave('../univariate_roi/adult_all_winVlos_ttest_bar_mdoors.png')
-```
-
-```{r}
+# T-test
 adult_data_all_social.t_tests = adult_data_all_social %>%
     group_by(roi) %>%
     summarise(P = t.test(contrast_mean, mu = 0)$p.value,
               Sig = ifelse(P < 0.05, "*", ""),
               MaxWidth = max(contrast_mean))
 
-
+# Multiple comparisons correction
 stats <- p.adjust(adult_data_all_social.t_tests$P,method='fdr')
 P_adjust <- stats
 Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                              ifelse(P_adjust < 0.05, "*", "")))
 adult_data_all_social.t_tests$Sig_adjust <- Sig_adjust
 
+# Plot
 p <- ggbarplot(adult_data_all_social, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se',
                position = position_dodge(0.8))
@@ -505,41 +398,42 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (all wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
+
 ggsave('../univariate_roi/adult_all_winVlos_ttest_bar_social.png')
 ```
 
 
 ## Adolescents
 ```{r}
+# Filter data
 adole_data <- all_sub_roi_con[all_sub_roi_con$group %in% 'kid', ]
 adole_data_all <- adole_data[adole_data$contrast %in% 'all_winVlos', ]
 adole_data_all <- adole_data_all[adole_data_all$roi %in% hyp_rois, ]
 
-```
-
-```{r}
 adole_data_all_mdoors <- adole_data_all[adole_data_all$task %in% 'mdoors', ]
 adole_data_all_social <- adole_data_all[adole_data_all$task %in% 'social', ]
-
 
 ```
 
 
 ### Monetary Task
 ```{r}
+# T-test
+
 adole_data_all_mdoors.t_tests = adole_data_all_mdoors %>%
     group_by(roi) %>%
     summarise(P = t.test(contrast_mean, mu = 0)$p.value,
               Sig = ifelse(P < 0.05, "*", ""),
               MaxWidth = max(contrast_mean))
 
-
+# Multiple comparison correction
 stats <- p.adjust(adole_data_all_mdoors.t_tests$P,method='fdr')
 P_adjust <- stats
 Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                              ifelse(P_adjust < 0.05, "*", "")))
 adole_data_all_mdoors.t_tests$Sig_adjust <- Sig_adjust
 
+# Plot
 p <- ggbarplot(adole_data_all_mdoors, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se',
                position = position_dodge(0.8))
@@ -548,25 +442,28 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (all wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
+
 ggsave('../univariate_roi/adole_all_winVlos_ttest_bar_mdoors.png')
 ```
 
 
 ### Social Task
 ```{r}
+# T-test
 adole_data_all_social.t_tests = adole_data_all_social %>%
     group_by(roi) %>%
     summarise(P = t.test(contrast_mean, mu = 0)$p.value,
               Sig = ifelse(P < 0.05, "*", ""),
               MaxWidth = max(contrast_mean))
 
-
+# Multiple comparison correction
 stats <- p.adjust(adole_data_all_social.t_tests$P,method='fdr')
 P_adjust <- stats
 Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                              ifelse(P_adjust < 0.05, "*", "")))
 adole_data_all_social.t_tests$Sig_adjust <- Sig_adjust
 
+# Plot
 p <- ggbarplot(adole_data_all_social, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se',
                position = position_dodge(0.8))
@@ -575,16 +472,16 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (all wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
+
 ggsave('../univariate_roi/adole_all_winVlos_ttest_bar_social.png')
 ```
 
 ## Group Differences
 
 ```{r}
+# Filter data
 allg_data_all <- all_sub_roi_con[all_sub_roi_con$contrast %in% 'all_winVlos', ]
 allg_data_all <- allg_data_all[allg_data_all$roi %in% hyp_rois, ]
-
-#allg_data$contrast_mean <- allg_data$contrast_mean * -1
 ```
 
 ### Monetary Task
@@ -594,29 +491,28 @@ allg_data_all_mdoors <- allg_data_all[allg_data_all$task %in% 'mdoors', ]
 ```
 
 ```{r}
+# ANOVA
 model_allg_all_mdoors <- aov(contrast_mean ~ group*roi,
                            data = allg_data_all_mdoors)
 summary(model_allg_all_mdoors)
 ```
 
-
-
-
-
 ```{r}
+# Two sample t-test
 allg_data_all_mdoors.t_tests = allg_data_all_mdoors %>%
     group_by(roi) %>%
     summarise(P = t.test(contrast_mean ~ group, mu = 0)$p.value,
               Sig = ifelse(P < 0.05, "*", ""),
               MaxWidth = max(contrast_mean))
 
-
+# Multiple comparison correction
 stats <- p.adjust(allg_data_all_mdoors.t_tests$P, method='fdr')
 P_adjust <- stats
 Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                              ifelse(P_adjust < 0.05, "*", "")))
 allg_data_all_mdoors.t_tests$Sig_adjust <- Sig_adjust
 
+# Plot
 p <- ggbarplot(allg_data_all_mdoors, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se',
                color = 'group', position = position_dodge(0.8))
@@ -625,24 +521,20 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
-#p + stat_compare_means(aes(group = group), label = 'p.signif', label.y=0.3) + 
-#  theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-#  scale_x_discrete(labels=hyp_rois_names)
 
 ggsave('../univariate_roi/allp_all_winVlos_anova_bar_mdoors.png')
-
-
 ```
-
 
 
 ### Social Task
 
 ```{r}
+# Filter data
 allg_data_all_social <- allg_data_all[allg_data_all$task %in% 'social', ]
 ```
 
 ```{r}
+# ANOVA
 model_allg_all_social <- aov(contrast_mean ~ group*roi,
                            data = allg_data_all_social)
 summary(model_allg_all_social)
@@ -650,19 +542,21 @@ summary(model_allg_all_social)
 
 
 ```{r}
+# Two sample t-test
 allg_data_all_social.t_tests = allg_data_all_social %>%
     group_by(roi) %>%
     summarise(P = t.test(contrast_mean ~ group, mu = 0)$p.value,
               Sig = ifelse(P < 0.05, "*", ""),
               MaxWidth = max(contrast_mean))
 
-
+# Multiple comparison correction
 stats <- p.adjust(allg_data_all_social.t_tests$P, method='fdr')
 P_adjust <- stats
 Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                              ifelse(P_adjust < 0.05, "*", "")))
 allg_data_all_social.t_tests$Sig_adjust <- Sig_adjust
 
+# Plot
 p <- ggbarplot(allg_data_all_social, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se',
                color = 'group', position = position_dodge(0.8))
@@ -671,31 +565,19 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
-#p + stat_compare_means(aes(group = group), label = 'p.signif', label.y=0.3) + 
-#  theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-#  scale_x_discrete(labels=hyp_rois_names)
-
-ggsave('../univariate_roi/allp_all_winVlos_anova_bar_social.png')
-
-```
-
-```{r}
-p <- ggbarplot(allg_data_all_social, x = 'roi', 
-               y = 'contrast_mean', add = 'mean_se',
-               color = 'group', position = position_dodge(0.8))
-p + stat_compare_means(aes(group = group), label = 'p.signif', label.y=0.3) + 
-  theme(axis.text.x = element_text(angle =45, vjust = 0.5))
 
 ggsave('../univariate_roi/allp_all_winVlos_anova_bar_social.png')
 ```
 
 
+***
+# Supplementary Analyses
 
+## Group x Task x ROI Analysis
 
-# Group x Task x ROI Analysis
-
-## Positive Wins vs Losses
+### Positive Wins vs Losses
 ```{r}
+# Filter data
 allg_data_pos <- all_sub_roi_con[all_sub_roi_con$contrast %in% 'positive_winVlos', ]
 allg_data_pos <- allg_data_pos[allg_data_pos$roi %in% hyp_rois, ]
 
@@ -703,12 +585,14 @@ allg_data_pos <- allg_data_pos[allg_data_pos$roi %in% hyp_rois, ]
 
 
 ```{r}
+# ANOVA
 model_allg_pos <- aov(contrast_mean ~ group*task*roi,
                            data = allg_data_pos)
 summary(model_allg_pos)
 ```
 
 ```{r}
+# Plot
 p <- ggplot(data = allg_data_pos, aes(x=roi, y=contrast_mean, fill=task, alpha=group))
 p + geom_bar(stat = 'summary', fun = 'mean', position=position_dodge()) +
   scale_alpha_manual(values = c(0.3, 1)) + 
@@ -718,8 +602,9 @@ ggsave('../univariate_roi/allp_pos_winVlos_anova_bar.png')
 ```
 
 
-## All Wins vs Losses
+### All Wins vs Losses
 ```{r}
+# Filter
 allg_data_all <- all_sub_roi_con[all_sub_roi_con$contrast %in% 'all_winVlos', ]
 allg_data_all <- allg_data_all[allg_data_all$roi %in% hyp_rois, ]
 
@@ -727,6 +612,7 @@ allg_data_all <- allg_data_all[allg_data_all$roi %in% hyp_rois, ]
 
 
 ```{r}
+# ANOVA
 model_allg_all <- aov(contrast_mean ~ group*task*roi,
                            data = allg_data_all)
 summary(model_allg_all)
@@ -740,29 +626,6 @@ p + geom_bar(stat = 'summary', fun = 'mean', position=position_dodge()) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
 ggsave('../univariate_roi/allp_all_winVlos_anova_bar.png')
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
