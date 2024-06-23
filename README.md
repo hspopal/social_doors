@@ -6,7 +6,7 @@
 ## Analyses
 
 ### Univariate
-#### ROI
+#### Region of Interest (ROI)
 - `univariate_roi_contrast.py`
   - Completes univariate analyses and pulls stats from ROIs
   - Utilizes Nilearn for general univariate analyses, and SUIT outputs for cerebellum regions
