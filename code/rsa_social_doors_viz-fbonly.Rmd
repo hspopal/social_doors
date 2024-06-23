@@ -30,7 +30,9 @@ require("knitr")
 opts_knit$set(root.dir = "~/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/rsa-bw_runs-fb_only/")
 ```
 
+# Set Up
 
+## Load Libraries
 ```{r}
 library(ggplot2)
 library(dplyr)
@@ -44,6 +46,9 @@ library(pBrackets)
 
 ```
 
+## Experiment Parameters
+
+### Set condition names relevant to the RSA
 ```{r}
 conds <- c('negative_win-mdoors', 'negative_loss-mdoors',
            'positive_win-mdoors', 'positive_loss-mdoors',
@@ -54,176 +59,21 @@ n_conds <- length(conds)
 ```
 
 
-
-# Model RDMs
-
-## Task Domain
-
-```{r}
-rdm_tdomain <- c(c(0,0,0,0,1,1,1,1),
-                 c(0,0,0,0,1,1,1,1),
-                 c(0,0,0,0,1,1,1,1),
-                 c(0,0,0,0,1,1,1,1),
-                 c(1,1,1,1,0,0,0,0),
-                 c(1,1,1,1,0,0,0,0),
-                 c(1,1,1,1,0,0,0,0),
-                 c(1,1,1,1,0,0,0,0))
-
-dim(rdm_tdomain) <- c(n_conds, n_conds)
-
-dimnames(rdm_tdomain) = list(conds, conds)
-
-rdm_tdomain_melt <- melt(rdm_tdomain)
-
-ggplot(rdm_tdomain_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
-  geom_tile(width = 1, color = 'grey') +
-  theme_minimal() + 
-  scale_fill_distiller(palette = "Greens", direction = 1) + 
-  labs(title = "Task Domain RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), plot.background = element_blank())
-
-ggsave('rdm_tdomain.png')
-```
-
-## Valence
-```{r}
-rdm_valence <- c(c(0,0,1,1,0,0,1,1),
-                 c(0,0,1,1,0,0,1,1),
-                 c(1,1,0,0,1,1,0,0),
-                 c(1,1,0,0,1,1,0,0),
-                 c(0,0,1,1,0,0,1,1),
-                 c(0,0,1,1,0,0,1,1),
-                 c(1,1,0,0,1,1,0,0),
-                 c(1,1,0,0,1,1,0,0))
-
-dim(rdm_valence) <- c(n_conds, n_conds)
-
-dimnames(rdm_valence) = list(conds, conds)
-
-rdm_valence_melt <- melt(rdm_valence)
-
-ggplot(rdm_valence_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
-  geom_tile(width = 1, color = 'grey') +
-  theme_minimal() + 
-  scale_fill_distiller(palette = "Greens", direction = 1) + 
-  labs(title = "Valence RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), plot.background = element_blank())
-
-ggsave('rdm_valence.png')
-```
-
-
-## Outcome
-```{r}
-rdm_outcome = c(c(0,1,0,1,0,1,0,1),
-                c(1,0,1,0,1,0,1,0),
-                c(0,1,0,1,0,1,0,1),
-                c(1,0,1,0,1,0,1,0),
-                c(0,1,0,1,0,1,0,1),
-                c(1,0,1,0,1,0,1,0),
-                c(0,1,0,1,0,1,0,1),
-                c(1,0,1,0,1,0,1,0))
-
-dim(rdm_outcome) <- c(n_conds, n_conds)
-
-dimnames(rdm_outcome) = list(conds, conds)
-
-rdm_outcome_melt <- melt(rdm_outcome)
-
-ggplot(rdm_outcome_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
-  geom_tile(width = 1, color = 'grey') +
-  theme_minimal() + 
-  scale_fill_distiller(palette = "Greens", direction = 1) + 
-  labs(title = "Outcome RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), plot.background = element_blank())
-
-ggsave('rdm_outcome.png')
-```
-
-
-## Outcome Valence
-Being correct about someone not liking you is different from being correct about someone liking you. But being incorrect about someone not liking you is the same feeling as being incorrect about someone not liking out (negative).
-```{r}
-rdm_outcval = c(c(1,1,1,1,1,1,1,1),
-                c(1,0,1,0,1,0,1,0),
-                c(1,1,1,1,1,1,1,1),
-                c(1,0,1,0,1,0,1,0),
-                c(1,1,1,1,1,1,1,1),
-                c(1,0,1,0,1,0,1,0),
-                c(1,1,1,1,1,1,1,1),
-                c(1,0,1,0,1,0,1,0))
-
-dim(rdm_outcval) <- c(n_conds, n_conds)
-
-dimnames(rdm_outcval) = list(conds, conds)
-
-rdm_outcval_melt <- melt(rdm_outcval)
-
-ggplot(rdm_outcval_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
-  geom_tile(width = 1, color = 'grey') +
-  theme_minimal() + 
-  scale_fill_distiller(palette = "Greens", direction = 1) + 
-  labs(title = "Outcome Valence RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), plot.background = element_blank())
-
-ggsave('rdm_outcval.png')
-```
-
-
-## Interaction
-Being correct about someone not liking you is different from being correct about someone liking you. But being incorrect about someone not liking you is the same feeling as being incorrect about someone not liking out (negative).
-```{r}
-rdm_intract = c(c(0/3, 1/3, 1/3, 2/3, 1/3, 2/3, 2/3, 3/3),
-                c(1/3, 0/3, 2/3, 1/3, 2/3, 1/3, 3/3, 2/3),
-                c(1/3, 2/3, 0/3, 1/3, 2/3, 3/3, 1/3, 2/3),
-                c(2/3, 1/3, 1/3, 0/3, 3/3, 2/3, 2/3, 1/3),
-                c(1/3, 2/3, 2/3, 3/3, 0/3, 1/3, 1/3, 2/3),
-                c(2/3, 1/3, 3/3, 2/3, 1/3, 0/3, 2/3, 1/3),
-                c(2/3, 3/3, 1/3, 2/3, 1/3, 2/3, 0/3, 1/3),
-                c(3/3, 2/3, 2/3, 1/3, 2/3, 1/3, 1/3, 0/3))
-
-dim(rdm_intract) <- c(n_conds, n_conds)
-
-dimnames(rdm_intract) = list(conds, conds)
-
-rdm_intract_melt <- melt(rdm_intract)
-
-ggplot(rdm_intract_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
-  geom_tile(width = 1, color = 'grey') +
-  theme_minimal() + 
-  scale_fill_distiller(palette = "Greens", direction = 1) + 
-  labs(title = "Valence Outcome Interaction RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), plot.background = element_blank())
-
-ggsave('rdm_intract.png')
-```
-
-
 ### Define Hypothesized ROIs
 ```{r}
-hyp_rois <- c('TPJ_b-social', 'dmPFC_b-social',
-              'region08', 'region06',
-              'striatum_ventral',
-              'region02')
-hyp_rois_names <- c('TPJ', 'dmPFC',
-                    'CB Region 8','CB Region 6',
-                    'Ventral Striatum',
-                    'CB Region 2')
+hyp_rois <- c('region08', 'region02',
+              'striatum_ventral')
+hyp_rois_names <- c('CB Region 8','CB Region 2',
+                    'Ventral Striatum')
+
+#hyp_rois <- c('TPJ_b-social', 'dmPFC_b-social',
+#              'region08', 'region06',
+#              'striatum_ventral',
+#              'region02')
+#hyp_rois_names <- c('TPJ', 'dmPFC',
+#                    'CB Region 8','CB Region 6',
+#                    'Ventral Striatum',
+#                    'CB Region 2')
 ```
 
 
@@ -236,16 +86,13 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2",
 
 
 
+# Positive and Negative Outcome Similarity
+In this analysis, we will directly test whether an ROI represents positive and negative wins in a similar manner. This will be done by correlating the multi-voxel representation of positive win trials to negative win trials. The hypothesis here is that the posterior cerebellum will respond similarily when participants were correct about someone liking them as being correct about someone disliking them, and that this similarity will be greater than in the ventral striatum. 
 
+## Set Up
 
-
-
-
-***
-# Representational Similarity Analysis
-
-
-# Positive win is different from negative win
+### Load data
+This analysis was completed using the Nilearn python package. Here we will only conduct second level ROI statistics and visualizations. 
 ```{r}
 all_sim_vcr <- read.csv(file='posnegwin_similarity.csv', header = TRUE)
 all_sim_vcr
@@ -257,7 +104,6 @@ all_sim_vcr
 all_sim_vcr$group[all_sim_vcr$group == 'control'] <- 'adult'
 all_sim_vcr$group[all_sim_vcr$group == 'college'] <- 'adult'
 ```
-
 
 
 Divide data by task
@@ -278,7 +124,7 @@ all_sim_vcr_social_rois <- all_sim_vcr_social[all_sim_vcr_social$roi %in% hyp_ro
 ```
 
 
-Fischer r to z transform
+Fischer r to z transform (this is not used)
 ```{r}
 all_sim_vcr_mdoors_rois$z <- fisherz(all_sim_vcr_mdoors_rois$r)
 all_sim_vcr_social_rois$z <- fisherz(all_sim_vcr_social_rois$r)
@@ -287,7 +133,8 @@ all_sim_vcr_social_rois$z <- fisherz(all_sim_vcr_social_rois$r)
 
 
 
-
+## Conduct One Sample T-Tests
+These t-tests will examine whether each ROI had significantly greater similarity than 0
 ```{r}
 
 all_sim_vcr_mdoors_rois.ttests <- data.frame(matrix(ncol=7,nrow=0))
@@ -351,7 +198,7 @@ simplify2array(tapply(x, factor, mean.sd))
 ```
 
 
-## Post-hoc Tests
+### Post-hoc Tests
 ```{r}
 tukey.test <- TukeyHSD(anova_mod_sim_vcr)
 tukey.test
@@ -366,66 +213,45 @@ all_sim_vcr_social_rois.two_ttests
 ```
 
 
-
+### Visualization
 Specify ROI plotting order on the x-axis
 ```{r}
-roi_plot_order <- c('TPJ_b-social', 'dmPFC_b-social', 'striatum_ventral',
-                    'region06', 'region08','region02')
+roi_plot_order <- c('region08', 'region02', 'striatum_ventral')
 
-roi_plot_label <- c('TPJ', 'dmPFC', 'Ventral Striatum',
-                    'CB Region 6', 'CB Region 8','CB Region 2')
+roi_plot_label <- c('CB Region 8','CB Region 2', 'Ventral Striatum')
 ```
 
-
-
-
 ```{r}
-#P_adjust <- all_sim_vcr_mdoors_rois.ttests$p_adjust
-#Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-#                                             ifelse(P_adjust < 0.05, "*", "")))
-
 # Rearrange x-axis labels
 all_sim_vcr_mdoors_rois$roi <- factor(all_sim_vcr_mdoors_rois$roi, 
                                       levels=roi_plot_order)
 
+# Specify significance signs
+Sig_adjust = ifelse(all_sim_vcr_mdoors_rois.ttests$p_adjust < 0.005, "***", 
+                    ifelse(all_sim_vcr_mdoors_rois.ttests$p_adjust < 0.01, "**", 
+                    ifelse(all_sim_vcr_mdoors_rois.ttests$p_adjust < 0.05, "*", "")))
+all_sim_vcr_mdoors_rois.ttests$Sig_adjust <- Sig_adjust
 
 
 p <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
                fill=cbPalette[6],
                position = position_dodge(0.8))
-p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  geom_signif(comparisons = list(c('region06', 'dmPFC_b-social'),
-                                 c('region06', 'striatum_ventral'),
-                                 c('region08', 'striatum_ventral')),
+p + theme(axis.text.x = element_text(vjust = 0.5)) + 
+  geom_signif(comparisons = list(c('region08', 'striatum_ventral'),
+                                 c('region02', 'striatum_ventral')),
               map_signif_level = TRUE,
-              annotations = c('**','***','**'), y_position = c(0.1,0.08,0.12),
-                            tip_length = 0,
-                            vjust=0.1) + 
+              annotations = c('***','**'), y_position = c(0.10,0.09),
+                            tip_length = 0, textsize = 6,
+                            vjust=0.3) + 
+  geom_text(aes(label = Sig_adjust, y = 0.08), size = 6,
+              data = all_sim_vcr_mdoors_rois.ttests) + 
   scale_x_discrete(labels=roi_plot_label) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Positive and Negative Win Similarity in Monetary Task") 
 
 ggsave('rsa_vcr_mdoors.png')
 
-```
-
-
-
-### One sample t-tests
-#### Right Crus I
-```{r}
-roi_c1_r <- all_sim_vcr_mdoors[all_sim_vcr_mdoors$roi == 'region08',]$r
-roi_c1_z <- fisherz(roi_c1_r)
-t.test(roi_c1_z, mu = 0)
-```
-
-
-#### Bilateral Ventrial Striatum
-```{r}
-roi_VS_b <- all_sim_vcr_mdoors[all_sim_vcr_mdoors$roi == 'striatum_ventral',]$r
-roi_VS_z <- fisherz(roi_VS_b)
-t.test(roi_VS_z, mu = 0)
 ```
 
 
@@ -451,15 +277,11 @@ tapply(x, factor, sd)
 ```
 
 
-
-
-## Post-hoc Tests
+### Post-hoc Tests
 ```{r}
 tukey.test <- TukeyHSD(anova_mod_sim_vcr)
 tukey.test
 ```
-
-
 
 ```{r}
 stats <- compare_means(r ~ roi, , data = all_sim_vcr_social_rois, method = "t.test",
@@ -469,64 +291,206 @@ stats
 
 
 
-
+### Visualization
 
 ```{r}
 
-#P_adjust <- all_sim_vcr_social_rois.ttests$p_adjust
-#Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-#                                             ifelse(P_adjust < 0.05, "*", "")))
-
+# Rearrange x-axis labels
 all_sim_vcr_social_rois$roi <- factor(all_sim_vcr_social_rois$roi, 
                                       levels=roi_plot_order)
+
+# Specify significance signs
+Sig_adjust = ifelse(all_sim_vcr_social_rois.ttests$p_adjust < 0.005, "***", 
+                    ifelse(all_sim_vcr_social_rois.ttests$p_adjust < 0.01, "**", 
+                    ifelse(all_sim_vcr_social_rois.ttests$p_adjust < 0.05, "*", "")))
+all_sim_vcr_social_rois.ttests$Sig_adjust <- Sig_adjust
+
 
 p <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
                fill=cbPalette[6],
                position = position_dodge(0.8))
-p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  geom_signif(comparisons = list(c('region06','TPJ_b-social'),
-                                 c('region06','region02'),
-                                 c('region06','striatum_ventral'),
-                                 c('region08','TPJ_b-social'),
-                                 c('region08','region02'),
-                                 c('region08','striatum_ventral')),
+p + theme(axis.text.x = element_text(vjust = 0.5)) + 
+  geom_signif(comparisons = list(c('region08', 'region02'),
+                                 c('region08', 'striatum_ventral'),
+                                 c('region02', 'striatum_ventral')),
               map_signif_level = TRUE,
-              annotations = c('**','**','***','*','*','**'), 
-              y_position = c(0.16,0.14,0.125,0.245,.2,.22), tip_length = 0) + 
+              annotations = c('*','***','***'), y_position = c(0.14,0.16,0.18),
+                            tip_length = 0, textsize = 6,
+                            vjust=0.3) + 
+  geom_text(aes(label = Sig_adjust, y = 0.14), size = 6,
+              data = all_sim_vcr_social_rois.ttests) + 
   scale_x_discrete(labels=roi_plot_label) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Positive and Negative Win Similarity in Social Task")
+
 ggsave('rsa_vcr_social.png')
 
 ```
 
 
 
-### One sample t-tests
-#### Right Crus I
+
+# Theoretical Representational Similarity Analysis
+In this analysis we will create theorical RDMs, that predict a specific representation within an ROI. 
+
+## Theoretical RDMs
+
+### Task Domain
+
 ```{r}
-roi_c1_r <- all_sim_vcr_social[all_sim_vcr_social$roi == 'region08',]$r
-roi_c1_z <- fisherz(roi_c1_r)
-t.test(roi_c1_z, mu = 0)
+rdm_tdomain <- c(c(0,0,0,0,1,1,1,1),
+                 c(0,0,0,0,1,1,1,1),
+                 c(0,0,0,0,1,1,1,1),
+                 c(0,0,0,0,1,1,1,1),
+                 c(1,1,1,1,0,0,0,0),
+                 c(1,1,1,1,0,0,0,0),
+                 c(1,1,1,1,0,0,0,0),
+                 c(1,1,1,1,0,0,0,0))
+
+dim(rdm_tdomain) <- c(n_conds, n_conds)
+
+dimnames(rdm_tdomain) = list(conds, conds)
+
+rdm_tdomain_melt <- melt(rdm_tdomain)
+
+ggplot(rdm_tdomain_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
+  geom_tile(width = 1, color = 'grey') +
+  theme_minimal() + 
+  scale_fill_distiller(palette = "Greens", direction = 1) + 
+  labs(title = "Task Domain RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), plot.background = element_blank())
+
+ggsave('rdm_tdomain.png')
+```
+
+### Valence
+```{r}
+rdm_valence <- c(c(0,0,1,1,0,0,1,1),
+                 c(0,0,1,1,0,0,1,1),
+                 c(1,1,0,0,1,1,0,0),
+                 c(1,1,0,0,1,1,0,0),
+                 c(0,0,1,1,0,0,1,1),
+                 c(0,0,1,1,0,0,1,1),
+                 c(1,1,0,0,1,1,0,0),
+                 c(1,1,0,0,1,1,0,0))
+
+dim(rdm_valence) <- c(n_conds, n_conds)
+
+dimnames(rdm_valence) = list(conds, conds)
+
+rdm_valence_melt <- melt(rdm_valence)
+
+ggplot(rdm_valence_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
+  geom_tile(width = 1, color = 'grey') +
+  theme_minimal() + 
+  scale_fill_distiller(palette = "Greens", direction = 1) + 
+  labs(title = "Valence RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), plot.background = element_blank())
+
+ggsave('rdm_valence.png')
 ```
 
 
-#### Bilateral Ventrial Striatum
+### Outcome
 ```{r}
-roi_VS_b <- all_sim_vcr_social[all_sim_vcr_social$roi == 'striatum_ventral',]$r
-roi_VS_z <- fisherz(roi_VS_b)
-t.test(roi_VS_z, mu = 0)
+rdm_outcome = c(c(0,1,0,1,0,1,0,1),
+                c(1,0,1,0,1,0,1,0),
+                c(0,1,0,1,0,1,0,1),
+                c(1,0,1,0,1,0,1,0),
+                c(0,1,0,1,0,1,0,1),
+                c(1,0,1,0,1,0,1,0),
+                c(0,1,0,1,0,1,0,1),
+                c(1,0,1,0,1,0,1,0))
+
+dim(rdm_outcome) <- c(n_conds, n_conds)
+
+dimnames(rdm_outcome) = list(conds, conds)
+
+rdm_outcome_melt <- melt(rdm_outcome)
+
+ggplot(rdm_outcome_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
+  geom_tile(width = 1, color = 'grey') +
+  theme_minimal() + 
+  scale_fill_distiller(palette = "Greens", direction = 1) + 
+  labs(title = "Outcome RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), plot.background = element_blank())
+
+ggsave('rdm_outcome.png')
 ```
 
 
+### Outcome Valence
+Being correct about someone not liking you is different from being correct about someone liking you. But being incorrect about someone not liking you is the same feeling as being incorrect about someone not liking out (negative).
+```{r}
+rdm_outcval = c(c(1,1,1,1,1,1,1,1),
+                c(1,0,1,0,1,0,1,0),
+                c(1,1,1,1,1,1,1,1),
+                c(1,0,1,0,1,0,1,0),
+                c(1,1,1,1,1,1,1,1),
+                c(1,0,1,0,1,0,1,0),
+                c(1,1,1,1,1,1,1,1),
+                c(1,0,1,0,1,0,1,0))
+
+dim(rdm_outcval) <- c(n_conds, n_conds)
+
+dimnames(rdm_outcval) = list(conds, conds)
+
+rdm_outcval_melt <- melt(rdm_outcval)
+
+ggplot(rdm_outcval_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
+  geom_tile(width = 1, color = 'grey') +
+  theme_minimal() + 
+  scale_fill_distiller(palette = "Greens", direction = 1) + 
+  labs(title = "Outcome Valence RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), plot.background = element_blank())
+
+ggsave('rdm_outcval.png')
+```
 
 
+### Interaction
+Being correct about someone not liking you is different from being correct about someone liking you. But being incorrect about someone not liking you is the same feeling as being incorrect about someone not liking out (negative).
+```{r}
+rdm_intract = c(c(0/3, 1/3, 1/3, 2/3, 1/3, 2/3, 2/3, 3/3),
+                c(1/3, 0/3, 2/3, 1/3, 2/3, 1/3, 3/3, 2/3),
+                c(1/3, 2/3, 0/3, 1/3, 2/3, 3/3, 1/3, 2/3),
+                c(2/3, 1/3, 1/3, 0/3, 3/3, 2/3, 2/3, 1/3),
+                c(1/3, 2/3, 2/3, 3/3, 0/3, 1/3, 1/3, 2/3),
+                c(2/3, 1/3, 3/3, 2/3, 1/3, 0/3, 2/3, 1/3),
+                c(2/3, 3/3, 1/3, 2/3, 1/3, 2/3, 0/3, 1/3),
+                c(3/3, 2/3, 2/3, 1/3, 2/3, 1/3, 1/3, 0/3))
 
+dim(rdm_intract) <- c(n_conds, n_conds)
 
+dimnames(rdm_intract) = list(conds, conds)
 
+rdm_intract_melt <- melt(rdm_intract)
 
+ggplot(rdm_intract_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
+  geom_tile(width = 1, color = 'grey') +
+  theme_minimal() + 
+  scale_fill_distiller(palette = "Greens", direction = 1) + 
+  labs(title = "Valence Outcome Interaction RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), plot.background = element_blank())
 
+ggsave('rdm_intract.png')
+```
 
 
 ## Task Domain
@@ -550,10 +514,8 @@ data_tdomain_rois <- data_tdomain[data_tdomain$roi %in% hyp_rois, ]
 ```
 
 
-
-
+### Conduct one sample t-tests
 ```{r}
-
 data_tdomain_rois.ttests <- data.frame(matrix(ncol=7,nrow=0))
 colnames(data_tdomain_rois.ttests) <- c('roi','t_stat','p','estimate','CI_l','CI_h','df')
 
@@ -575,10 +537,10 @@ for (roi in hyp_rois) {
 
       
   # Increase counter for row numbers
-      
   row_n = row_n+1
 }
 
+# Multiple comparisons correction
 data_tdomain_rois.ttests$p_adjust <- p.adjust(data_tdomain_rois.ttests$p,
                                                    method='fdr')
 
@@ -608,7 +570,6 @@ tukey.test <- TukeyHSD(anova_mod_tdomain)
 tukey.test
 ```
 
-
 ```{r}
 stats <- compare_means(r ~ roi, , data = data_tdomain_rois, method = "t.test",
                        p.adjust.method = 'fdr')
@@ -619,18 +580,34 @@ stats
 ### Visualization
 ```{r}
 
+# Rearrange x-axis labels
+data_tdomain_rois$roi <- factor(data_tdomain_rois$roi, 
+                                      levels=roi_plot_order)
+
+# Specify significance signs
+Sig_adjust = ifelse(data_tdomain_rois.ttests$p_adjust < 0.005, "***", 
+                    ifelse(data_tdomain_rois.ttests$p_adjust < 0.01, "**", 
+                    ifelse(data_tdomain_rois.ttests$p_adjust < 0.05, "*", "")))
+data_tdomain_rois.ttests$Sig_adjust <- Sig_adjust
+
+
 p <- ggbarplot(data_tdomain_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
                fill=cbPalette[7],
                position = position_dodge(0.8))
-p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  #geom_signif(comparisons = list(c("region06", "striatum_ventral"),
-  #                               c('region06','striatum_dorsalp')),
+p + theme(axis.text.x = element_text(vjust = 0.5)) + 
+  #geom_signif(comparisons = list(c('region08', 'region02'),
+  #                               c('region08', 'striatum_ventral'),
+  #                               c('region02', 'striatum_ventral')),
   #            map_signif_level = TRUE,
-  #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
-  #scale_x_discrete(labels=hyp_rois_names) + 
+  #            annotations = c('*','***','***'), y_position = c(0.14,0.16,0.18),
+  #                          tip_length = 0, textsize = 6,
+  #                          vjust=0.3) + 
+  geom_text(aes(label = Sig_adjust, y = 0.30), size = 6,
+              data = data_tdomain_rois.ttests) + 
+  scale_x_discrete(labels=roi_plot_label) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
-  ggtitle("Similarity to Task Domain RDM") 
+  ggtitle("Similarity to Task Domain RDM")
 
 ggsave('rsa_tdomain.png')
 
@@ -727,18 +704,32 @@ head(stats)
 
 ### Visualization
 ```{r}
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+# Rearrange x-axis labels
+data_valence_rois$roi <- factor(data_valence_rois$roi, 
+                                      levels=roi_plot_order)
+
+# Specify significance signs
+Sig_adjust = ifelse(data_valence_rois.ttests$p_adjust < 0.005, "***", 
+                    ifelse(data_valence_rois.ttests$p_adjust < 0.01, "**", 
+                    ifelse(data_valence_rois.ttests$p_adjust < 0.05, "*", "")))
+data_valence_rois.ttests$Sig_adjust <- Sig_adjust
+
 
 p <- ggbarplot(data_valence_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
                fill=cbPalette[7],
                position = position_dodge(0.8))
-p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  #geom_signif(comparisons = list(c("region06", "striatum_ventral"),
-  #                               c('region06','striatum_dorsalp')),
+p + theme(axis.text.x = element_text(vjust = 0.5)) + 
+  #geom_signif(comparisons = list(c('region08', 'region02'),
+  #                               c('region08', 'striatum_ventral'),
+  #                               c('region02', 'striatum_ventral')),
   #            map_signif_level = TRUE,
-  #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
-  #scale_x_discrete(labels=hyp_rois_names) + 
+  #            annotations = c('*','***','***'), y_position = c(0.14,0.16,0.18),
+  #                          tip_length = 0, textsize = 6,
+  #                          vjust=0.3) + 
+  geom_text(aes(label = Sig_adjust, y = 0.01), size = 6,
+              data = data_valence_rois.ttests) + 
+  scale_x_discrete(labels=roi_plot_label) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Similarity to Valence RMD") 
 
@@ -781,12 +772,11 @@ simplify2array(tapply(x, factor, mean.sd))
 ```
 
 
-## Post-hoc Tests
+### Post-hoc Tests
 ```{r}
 tukey.test <- TukeyHSD(anova_mod_outcome)
 tukey.test
 ```
-
 
 ```{r}
 stats <- compare_means(r ~ roi, , data = data_outcome_rois, method = "t.test",
@@ -797,18 +787,32 @@ head(stats)
 
 ### Visualization
 ```{r}
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+# Rearrange x-axis labels
+data_outcome_rois$roi <- factor(data_outcome_rois$roi, 
+                                      levels=roi_plot_order)
+
+# Specify significance signs
+Sig_adjust = ifelse(data_outcome_rois.ttests$p_adjust < 0.005, "***", 
+                    ifelse(data_outcome_rois.ttests$p_adjust < 0.01, "**", 
+                    ifelse(data_outcome_rois.ttests$p_adjust < 0.05, "*", "")))
+data_outcome_rois.ttests$Sig_adjust <- Sig_adjust
+
 
 p <- ggbarplot(data_outcome_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
                fill=cbPalette[7],
                position = position_dodge(0.8))
-p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  #geom_signif(comparisons = list(c("region06", "striatum_ventral"),
-  #                               c('region06','striatum_dorsalp')),
+p + theme(axis.text.x = element_text(vjust = 0.5)) + 
+  #geom_signif(comparisons = list(c('region08', 'region02'),
+  #                               c('region08', 'striatum_ventral'),
+  #                               c('region02', 'striatum_ventral')),
   #            map_signif_level = TRUE,
-  #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
-  #scale_x_discrete(labels=hyp_rois_names) + 
+  #            annotations = c('*','***','***'), y_position = c(0.14,0.16,0.18),
+  #                          tip_length = 0, textsize = 6,
+  #                          vjust=0.3) + 
+  geom_text(aes(label = Sig_adjust, y = 0.02), size = 6,
+              data = data_outcome_rois.ttests) + 
+  scale_x_discrete(labels=roi_plot_label) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Similarity to Outcome RMD") 
 
@@ -841,7 +845,6 @@ anova_mod_outcval <- aov(r ~ roi, data=data_outcval_rois)
 summary(anova_mod_outcval)
 ```
 
-
 ```{r}
 x <- data_outcval_rois$r
 factor <- data_outcval_rois$roi
@@ -857,7 +860,6 @@ tukey.test <- TukeyHSD(anova_mod_outcval)
 tukey.test
 ```
 
-
 ```{r}
 stats <- compare_means(r ~ roi, , data = data_outcval_rois, method = "t.test",
                        p.adjust.method = 'fdr')
@@ -867,18 +869,30 @@ head(stats)
 
 ### Visualization
 ```{r}
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+# Rearrange x-axis labels
+data_outcval_rois$roi <- factor(data_outcval_rois$roi, 
+                                      levels=roi_plot_order)
+
+# Specify significance signs
+Sig_adjust = ifelse(data_outcval_rois.ttests$p_adjust < 0.005, "***", 
+                    ifelse(data_outcval_rois.ttests$p_adjust < 0.01, "**", 
+                    ifelse(data_outcval_rois.ttests$p_adjust < 0.05, "*", "")))
+data_outcval_rois.ttests$Sig_adjust <- Sig_adjust
+
 
 p <- ggbarplot(data_outcval_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
                fill=cbPalette[7],
                position = position_dodge(0.8))
-p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  #geom_signif(comparisons = list(c("region06", "striatum_ventral"),
-  #                               c('region06','striatum_dorsalp')),
-  #            map_signif_level = TRUE,
-  #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
-  #scale_x_discrete(labels=hyp_rois_names) + 
+p + theme(axis.text.x = element_text(vjust = 0.5)) + 
+  geom_signif(comparisons = list(c('region08', 'striatum_ventral')),
+              map_signif_level = TRUE,
+              annotations = c('*'), y_position = c(0.06),
+                            tip_length = 0, textsize = 6,
+                            vjust=0.3) + 
+  geom_text(aes(label = Sig_adjust, y = 0.05), size = 6,
+              data = data_outcval_rois.ttests) + 
+  scale_x_discrete(labels=roi_plot_label) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Similarity to Outcome Valence RMD") 
 
@@ -927,7 +941,6 @@ tukey.test <- TukeyHSD(anova_mod_intract)
 tukey.test
 ```
 
-
 ```{r}
 stats <- compare_means(r ~ roi, , data = data_intract_rois, method = "t.test",
                        p.adjust.method = 'fdr')
@@ -935,33 +948,38 @@ head(stats)
 ```
 
 
-# Visualization
+### Visualization
 ```{r}
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+# Rearrange x-axis labels
+data_intract_rois$roi <- factor(data_intract_rois$roi, 
+                                      levels=roi_plot_order)
+
+# Specify significance signs
+Sig_adjust = ifelse(data_intract_rois.ttests$p_adjust < 0.005, "***", 
+                    ifelse(data_intract_rois.ttests$p_adjust < 0.01, "**", 
+                    ifelse(data_intract_rois.ttests$p_adjust < 0.05, "*", "")))
+data_intract_rois.ttests$Sig_adjust <- Sig_adjust
+
 
 p <- ggbarplot(data_intract_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
                fill=cbPalette[7],
                position = position_dodge(0.8))
-p + theme(axis.text.x = element_text(angle =45, vjust = 0.5)) + 
-  #geom_signif(comparisons = list(c("region06", "striatum_ventral"),
-  #                               c('region06','striatum_dorsalp')),
+p + theme(axis.text.x = element_text(vjust = 0.5)) + 
+  #geom_signif(comparisons = list(c('region08', 'striatum_ventral')),
   #            map_signif_level = TRUE,
-  #            annotations = c('***','*'), y_position = c(0.166,0.185), vjust=0.1) + 
-  #scale_x_discrete(labels=hyp_rois_names) + 
+  #            annotations = c('*'), y_position = c(0.06),
+  #                          tip_length = 0, textsize = 6,
+  #                          vjust=0.3) + 
+  geom_text(aes(label = Sig_adjust, y = 0.12), size = 6,
+              data = data_intract_rois.ttests) + 
+  scale_x_discrete(labels=roi_plot_label) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
   ggtitle("Similarity to Outcome Valence Interaction RMD") 
 
 ggsave('rsa_intract.png')
 
 ```
-
-
-
-
-
-
-***
 
 
 
