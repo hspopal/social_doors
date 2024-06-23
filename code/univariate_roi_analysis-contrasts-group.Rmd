@@ -148,7 +148,7 @@ adult_data_pos_social.t_tests$Sig_adjust <- Sig_adjust
 p <- ggbarplot(adult_data_pos_social, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se',
                position = position_dodge(0.8))
-p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+p + geom_text(aes(label = Sig_adjust, y = 0.35), size = 6,
               data = adult_data_pos_social.t_tests) + 
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
