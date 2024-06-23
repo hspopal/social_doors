@@ -34,4 +34,6 @@
 ### Representational Similarity Analysis
 - `rsa_social_doors-fbonly.ipynb`
   - Looking at only the similarity of the feedback trials
+- `rsa_roi_similarity-fb_only.Rmd`
+  - Comparing ROI representations to each other
 
