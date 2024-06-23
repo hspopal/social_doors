@@ -18,6 +18,7 @@
   - Create subject level beta and contrast maps, across runs
 - `social_doors_1st_level-nilearn-indiv_runs.py`
   - Create subject level beta maps for each run
+  - The output of this script is used for the RSA
 - `social_doors_2nd_level-nilearn.ipynb`
   - Whole brain second level (between-subjects) analyses
 
