@@ -23,9 +23,13 @@
 
 ### Psychophysiological Interactions
 - `ppi_cerebellum.ipynb`
+  - Whole brain PPI analysis done with nltools
 - `ppi_cerebellum-network.ipynb`
-- `ppi_cerebellum-roi_network.ipynb` - working
-- `ppi_cerebellum-dual_regression.ipynb` - done
+  - Network PPI analysis done with nltools
+- `ppi_cerebellum-nilearn.ipynb`
+  - Whole brain and network ROI PPI analysis done with Nilearn
+- `ppi_cerebellum-dual_regression.ipynb`
+  - Dual Regression PPI analysis done with nltools (first level) and nilearn (second level)
 
 ### Representational Similarity Analysis
 - `rsa_social_doors-fbonly.ipynb`
