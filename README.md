@@ -4,6 +4,7 @@
 
 
 ## Analyses
+The following scripts can be found in the code direction of this repo. 
 
 ### Univariate
 #### Region of Interest (ROI)
