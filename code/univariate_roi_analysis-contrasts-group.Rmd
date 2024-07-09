@@ -17,6 +17,8 @@ output:
 library(knitr)
 library(tidyverse)
 library(ggpubr)
+library(kableExtra)
+
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
 
@@ -99,21 +101,41 @@ adult_data_pos_social <- adult_data_pos[adult_data_pos$task %in% 'social', ]
 ```
 
 
+** Function: Conduct One Sample T-Tests for ROIs**
+```{r}
+
+mass_t_tests <- function(df) {
+  # Conduct one-sample t-tests to examine if ROI contrast is greater than 0
+  df.t_tests = df %>%
+               group_by(roi) %>%
+               summarise(Statistic = t.test(contrast_mean, mu = 0)$statistic,
+                         P = t.test(contrast_mean, mu = 0)$p.value,
+                         Sig = ifelse(P < 0.05, "*", ""),
+                         df = t.test(contrast_mean, mu = 0)$parameter,
+                         Estimate = t.test(contrast_mean, mu = 0)$estimate,
+                         CI_l = t.test(contrast_mean, mu = 0)$conf.int[1],
+                         CI_u = t.test(contrast_mean, mu = 0)$conf.int[2],
+                         MaxWidth = max(contrast_mean))
+  
+  # Conduct multiple comparisons correction
+  stats <- p.adjust(df.t_tests$P,method='fdr')
+  P_adjust <- stats
+  Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+                                               ifelse(P_adjust < 0.05, "*", "")))
+  df.t_tests$P_adjust <- P_adjust
+  df.t_tests$Sig_adjust <- Sig_adjust
+  
+  return(df.t_tests)
+}
+
+```
+
+
+
 ### Monetary Task
 ```{r}
 # Conduct one-sample t-tests to examine if ROI contrast is greater than 0
-adult_data_pos_mdoors.t_tests = adult_data_pos_mdoors %>%
-                                group_by(roi) %>%
-                                summarise(P = t.test(contrast_mean, mu = 0)$p.value,
-                                          Sig = ifelse(P < 0.05, "*", ""),
-                                          MaxWidth = max(contrast_mean))
-
-# Conduct multiple comparisons correction
-stats <- p.adjust(adult_data_pos_mdoors.t_tests$P,method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-adult_data_pos_mdoors.t_tests$Sig_adjust <- Sig_adjust
+adult_data_pos_mdoors.t_tests <- mass_t_tests(adult_data_pos_mdoors)
 
 # Plot
 p <- ggbarplot(adult_data_pos_mdoors, x = 'roi', 
@@ -128,21 +150,13 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
 ggsave('../univariate_roi/adult_pos_winVlos_ttest_bar_mdoors.png')
 ```
 
+
+
 ### Social Task
 ```{r}
 # Conduct one-sample t-tests to examine if ROI contrast is greater than 0
-adult_data_pos_social.t_tests = adult_data_pos_social %>%
-    group_by(roi) %>%
-    summarise(P = t.test(contrast_mean, mu = 0)$p.value,
-              Sig = ifelse(P < 0.05, "*", ""),
-              MaxWidth = max(contrast_mean))
+adult_data_pos_social.t_tests <- mass_t_tests(adult_data_pos_social)
 
-# Conduct multiple comparisons correction
-stats <- p.adjust(adult_data_pos_social.t_tests$P,method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-adult_data_pos_social.t_tests$Sig_adjust <- Sig_adjust 
 
 # Plot
 p <- ggbarplot(adult_data_pos_social, x = 'roi', 
@@ -172,18 +186,8 @@ adole_data_pos_social <- adole_data_pos[adole_data_pos$task %in% 'social', ]
 ### Monetary Task
 ```{r}
 # One sample t-tests
-adole_data_pos_mdoors.t_tests = adole_data_pos_mdoors %>%
-    group_by(roi) %>%
-    summarise(P = t.test(contrast_mean, mu = 0)$p.value,
-              Sig = ifelse(P < 0.05, "*", ""),
-              MaxWidth = max(contrast_mean))
+adole_data_pos_mdoors.t_tests <- mass_t_tests(adole_data_pos_mdoors)
 
-# Multiple comparisons correction
-stats <- p.adjust(adole_data_pos_mdoors.t_tests$P,method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-adole_data_pos_mdoors.t_tests$Sig_adjust <- Sig_adjust
 
 # Plot
 p <- ggbarplot(adole_data_pos_mdoors, x = 'roi', 
@@ -202,18 +206,8 @@ ggsave('../univariate_roi/adole_pos_winVlos_ttest_bar_mdoors.png')
 ### Social Task
 ```{r}
 # One sample t-tests
-adole_data_pos_social.t_tests = adole_data_pos_social %>%
-    group_by(roi) %>%
-    summarise(P = t.test(contrast_mean, mu = 0)$p.value,
-              Sig = ifelse(P < 0.05, "*", ""),
-              MaxWidth = max(contrast_mean))
+adole_data_pos_social.t_tests <- mass_t_tests(adole_data_pos_social)
 
-# Multiple comparisons correction
-stats <- p.adjust(adole_data_pos_social.t_tests$P,method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-adole_data_pos_social.t_tests$Sig_adjust <- Sig_adjust
 
 # Plot
 p <- ggbarplot(adole_data_pos_social, x = 'roi', 
@@ -251,21 +245,36 @@ model_allg_pos_mdoors <- aov(contrast_mean ~ group*roi,
 summary(model_allg_pos_mdoors)
 ```
 
-
 ```{r}
 # Conduct t-tests between each group, for each ROI
 allg_data_pos_mdoors.t_tests = allg_data_pos_mdoors %>%
-    group_by(roi) %>%
-    summarise(P = t.test(contrast_mean ~ group, mu = 0)$p.value,
-              Sig = ifelse(P < 0.05, "*", ""),
-              MaxWidth = max(contrast_mean))
+               group_by(roi) %>%
+               summarise(Statistic = funs(t.test(.[group == 'kid'], .[group == 'college'])$statistic),
+                         P = t.test(contrast_mean, mu = 0)$p.value,
+                         Sig = ifelse(P < 0.05, "*", ""),
+                         df = t.test(contrast_mean, mu = 0)$parameter,
+                         Estimate = t.test(contrast_mean, mu = 0)$estimate,
+                         CI_l = t.test(contrast_mean, mu = 0)$conf.int[1],
+                         CI_u = t.test(contrast_mean, mu = 0)$conf.int[2],
+                         MaxWidth = max(contrast_mean))
+
+
+
+test <- allg_data_pos_mdoors %>%
+        select(-subject_id) %>%
+        group_by(roi, group) %>%
+        summarize_at(
+            vars(-group_cols(), -contrast_mean),
+            list(t.test = ~ list(t.test(. ~ contrast_mean))))
 
 # Conduct multiple comparisons correction
-stats <- p.adjust(allg_data_pos_mdoors.t_tests$P, method='fdr')
+stats <- p.adjust(df.t_tests$P,method='fdr')
 P_adjust <- stats
 Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                              ifelse(P_adjust < 0.05, "*", "")))
-allg_data_pos_mdoors.t_tests$Sig_adjust <- Sig_adjust
+df.t_tests$P_adjust <- P_adjust
+df.t_tests$Sig_adjust <- Sig_adjust
+
 
 # Plot
 p <- ggbarplot(allg_data_pos_mdoors, x = 'roi', 
@@ -277,7 +286,41 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
 
-ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_mdoors.png')
+#ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_mdoors.png')
+
+```
+
+
+```{r}
+# Conduct t-tests between each group, for each ROI
+allg_data_pos_mdoors.t_tests <- allg_data_pos_mdoors %>% 
+                                group_by(roi) %>% 
+                                do(tidy(t.test(contrast_mean~group, data=.)))
+  
+# Conduct multiple comparisons correction
+stats <- p.adjust(allg_data_pos_mdoors.t_tests$p.value,method='fdr')
+P_adjust <- stats
+Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+                                             ifelse(P_adjust < 0.05, "*", "")))
+allg_data_pos_mdoors.t_tests$P_adjust.
+
+
+
+<- P_adjust
+allg_data_pos_mdoors.t_tests$Sig_adjust <- Sig_adjust
+
+
+# Plot
+p <- ggbarplot(allg_data_pos_mdoors, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se',
+               color = 'group', position = position_dodge(0.8))
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_pos_mdoors.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
+  scale_x_discrete(labels=hyp_rois_names)
+
+#ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_mdoors.png')
 
 ```
 
@@ -299,18 +342,8 @@ summary(model_allg_pos_social)
 
 ```{r}
 # Conduct two-sample t-test
-allg_data_pos_social.t_tests = allg_data_pos_social %>%
-    group_by(roi) %>%
-    summarise(P = t.test(contrast_mean ~ group, mu = 0)$p.value,
-              Sig = ifelse(P < 0.05, "*", ""),
-              MaxWidth = max(contrast_mean))
+allg_data_pos_social.t_tests <- mass_t_tests(allg_data_pos_social)
 
-# Multiple comparisons correction
-stats <- p.adjust(allg_data_pos_social.t_tests$P, method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-allg_data_pos_social.t_tests$Sig_adjust <- Sig_adjust
 
 # Plot
 p <- ggbarplot(allg_data_pos_social, x = 'roi', 
@@ -346,18 +379,8 @@ adult_data_all_social <- adult_data_all[adult_data_all$task %in% 'social', ]
 ### Monetary Task
 ```{r}
 # Conduct t-tests
-adult_data_all_mdoors.t_tests = adult_data_all_mdoors %>%
-    group_by(roi) %>%
-    summarise(P = t.test(contrast_mean, mu = 0)$p.value,
-              Sig = ifelse(P < 0.05, "*", ""),
-              MaxWidth = max(contrast_mean))
+adult_data_all_mdoors.t_tests <- mass_t_tests(adult_data_all_mdoors)
 
-# Multiple comparisons correction
-stats <- p.adjust(adult_data_all_mdoors.t_tests$P,method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-adult_data_all_mdoors.t_tests$Sig_adjust <- Sig_adjust
 
 # Plot
 p <- ggbarplot(adult_data_all_mdoors, x = 'roi', 
@@ -376,18 +399,8 @@ ggsave('../univariate_roi/adult_all_winVlos_ttest_bar_mdoors.png')
 
 ```{r}
 # T-test
-adult_data_all_social.t_tests = adult_data_all_social %>%
-    group_by(roi) %>%
-    summarise(P = t.test(contrast_mean, mu = 0)$p.value,
-              Sig = ifelse(P < 0.05, "*", ""),
-              MaxWidth = max(contrast_mean))
+adult_data_all_social.t_tests <- mass_t_tests(adult_data_all_social)
 
-# Multiple comparisons correction
-stats <- p.adjust(adult_data_all_social.t_tests$P,method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-adult_data_all_social.t_tests$Sig_adjust <- Sig_adjust
 
 # Plot
 p <- ggbarplot(adult_data_all_social, x = 'roi', 
@@ -419,19 +432,8 @@ adole_data_all_social <- adole_data_all[adole_data_all$task %in% 'social', ]
 ### Monetary Task
 ```{r}
 # T-test
+adole_data_all_mdoors.t_tests <- mass_t_tests(adole_data_all_mdoors)
 
-adole_data_all_mdoors.t_tests = adole_data_all_mdoors %>%
-    group_by(roi) %>%
-    summarise(P = t.test(contrast_mean, mu = 0)$p.value,
-              Sig = ifelse(P < 0.05, "*", ""),
-              MaxWidth = max(contrast_mean))
-
-# Multiple comparison correction
-stats <- p.adjust(adole_data_all_mdoors.t_tests$P,method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-adole_data_all_mdoors.t_tests$Sig_adjust <- Sig_adjust
 
 # Plot
 p <- ggbarplot(adole_data_all_mdoors, x = 'roi', 
@@ -450,18 +452,8 @@ ggsave('../univariate_roi/adole_all_winVlos_ttest_bar_mdoors.png')
 ### Social Task
 ```{r}
 # T-test
-adole_data_all_social.t_tests = adole_data_all_social %>%
-    group_by(roi) %>%
-    summarise(P = t.test(contrast_mean, mu = 0)$p.value,
-              Sig = ifelse(P < 0.05, "*", ""),
-              MaxWidth = max(contrast_mean))
+adole_data_all_social.t_tests <- mass_t_tests(adole_data_all_social)
 
-# Multiple comparison correction
-stats <- p.adjust(adole_data_all_social.t_tests$P,method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-adole_data_all_social.t_tests$Sig_adjust <- Sig_adjust
 
 # Plot
 p <- ggbarplot(adole_data_all_social, x = 'roi', 
@@ -499,18 +491,8 @@ summary(model_allg_all_mdoors)
 
 ```{r}
 # Two sample t-test
-allg_data_all_mdoors.t_tests = allg_data_all_mdoors %>%
-    group_by(roi) %>%
-    summarise(P = t.test(contrast_mean ~ group, mu = 0)$p.value,
-              Sig = ifelse(P < 0.05, "*", ""),
-              MaxWidth = max(contrast_mean))
+allg_data_all_mdoors.t_tests <- mass_t_tests(allg_data_all_mdoors)
 
-# Multiple comparison correction
-stats <- p.adjust(allg_data_all_mdoors.t_tests$P, method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-allg_data_all_mdoors.t_tests$Sig_adjust <- Sig_adjust
 
 # Plot
 p <- ggbarplot(allg_data_all_mdoors, x = 'roi', 
@@ -543,18 +525,8 @@ summary(model_allg_all_social)
 
 ```{r}
 # Two sample t-test
-allg_data_all_social.t_tests = allg_data_all_social %>%
-    group_by(roi) %>%
-    summarise(P = t.test(contrast_mean ~ group, mu = 0)$p.value,
-              Sig = ifelse(P < 0.05, "*", ""),
-              MaxWidth = max(contrast_mean))
+allg_data_all_social.t_tests <- mass_t_tests(allg_data_all_social)
 
-# Multiple comparison correction
-stats <- p.adjust(allg_data_all_social.t_tests$P, method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-allg_data_all_social.t_tests$Sig_adjust <- Sig_adjust
 
 # Plot
 p <- ggbarplot(allg_data_all_social, x = 'roi', 
@@ -568,6 +540,121 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
 
 ggsave('../univariate_roi/allp_all_winVlos_anova_bar_social.png')
 ```
+
+
+
+# Stats Table
+Create a stats table to summarize all univariate ROI analyses
+
+## Combine one-sample t-test data
+```{r}
+adult_data_pos_mdoors.t_tests$group <- 'adult'
+adult_data_pos_mdoors.t_tests$task <- 'mdoors'
+adult_data_pos_mdoors.t_tests$contrast <- 'positive'
+
+adult_data_pos_social.t_tests$group <- 'adult'
+adult_data_pos_social.t_tests$task <- 'social'
+adult_data_pos_social.t_tests$contrast <- 'positive'
+
+adult_data_all_mdoors.t_tests$group <- 'adult'
+adult_data_all_mdoors.t_tests$task <- 'mdoors'
+adult_data_all_mdoors.t_tests$contrast <- 'all'
+
+adult_data_all_social.t_tests$group <- 'adult'
+adult_data_all_social.t_tests$task <- 'social'
+adult_data_all_social.t_tests$contrast <- 'all'
+
+
+adole_data_pos_mdoors.t_tests$group <- 'adolescent'
+adole_data_pos_mdoors.t_tests$task <- 'mdoors'
+adole_data_pos_mdoors.t_tests$contrast <- 'positive'
+
+adole_data_pos_social.t_tests$group <- 'adolescent'
+adole_data_pos_social.t_tests$task <- 'social'
+adole_data_pos_social.t_tests$contrast <- 'positive'
+
+adole_data_all_mdoors.t_tests$group <- 'adolescent'
+adole_data_all_mdoors.t_tests$task <- 'mdoors'
+adole_data_all_mdoors.t_tests$contrast <- 'all'
+
+adole_data_all_social.t_tests$group <- 'adolescent'
+adole_data_all_social.t_tests$task <- 'social'
+adole_data_all_social.t_tests$contrast <- 'all'
+
+
+combined_ttests <- rbind(#adult_data_pos_mdoors.t_tests,
+                         #adult_data_pos_social.t_tests,
+                         adult_data_all_mdoors.t_tests,
+                         adult_data_all_social.t_tests,
+                         #adole_data_pos_mdoors.t_tests,
+                         #adole_data_pos_social.t_tests, 
+                         adole_data_all_mdoors.t_tests,
+                         adole_data_all_social.t_tests)
+
+```
+
+Fix up dataframe for pretty table
+```{r}
+# Sort dataframe
+one_sample_table <- combined_ttests[order(combined_ttests$group, 
+                                          combined_ttests$task, 
+                                          combined_ttests$roi), ]
+
+# Rename ROI names
+rep_str = c('TPJ_b-social'='TPJ', 'ATL_b-social'='ATL', 'AMG_r-social'='AMG',
+            'PCC_b-social'='PCC', 'dmPFC_b-social'='dmPFC', 
+            'vmPFC_b-reward'='vmPFC', 'region01'='CB Region 1',
+            'region02'='CB Region 2', 'region05'='CB Region 5', 
+            'region06'='CB Region 6', 'region07'='CB Region 7', 
+            'region08'='CB Region 8', 'region09'='CB Region 9',
+            'region10'='CB Region 10', 
+            'striatum_dorsalp'='Posterior Dorsal Striatum', 
+            'striatum_dorsala'='Posterior Anterior Striatum', 
+            'striatum_ventral'='Ventral Striatum')
+one_sample_table$roi <- str_replace_all(one_sample_table$roi, rep_str)
+
+# Turn columns numeric
+one_sample_table$Statistic <- as.numeric(one_sample_table$Statistic)
+one_sample_table$Estimate <- as.numeric(one_sample_table$Estimate)
+one_sample_table$CI_l <- as.numeric(one_sample_table$CI_l)
+one_sample_table$CI_u <- as.numeric(one_sample_table$CI_u)
+one_sample_table$P_adjust <- as.numeric(one_sample_table$P_adjust)
+
+# Round numbers
+one_sample_table$Statistic <- round(one_sample_table$Statistic,2)
+one_sample_table$Estimate <- round(one_sample_table$Estimate,2)
+one_sample_table$CI_l <- round(one_sample_table$CI_l,2)
+one_sample_table$CI_u <- round(one_sample_table$CI_u,2)
+one_sample_table$P_adjust <- round(one_sample_table$P_adjust,3)
+
+# Combine confidence inverval ranges
+one_sample_table$CI <- paste('[', as.character(one_sample_table$CI_l),
+                              ', ', as.character(one_sample_table$CI_u), ']')
+
+# Reorder columns
+one_sample_table <- one_sample_table[, c('group', 'task', "roi", "Estimate", 
+                                         "df", "Statistic",
+                                           "P_adjust", "CI")]
+
+colnames(one_sample_table) <- c('Group', 'Task', 'ROI','Mean','df','t-statistic','p','CI')
+
+```
+
+```{r}
+one_sample_table %>%
+  kbl(caption = "RSA results for a full and partial similarity analysis") %>%
+  kable_classic(full_width = F, html_font = "Times New Roman") %>%
+  save_kable("mass_one_sample_ttests.html")
+
+
+one_sample_table %>%
+  kbl(caption = "RSA results for a full and partial similarity analysis") %>%
+  kable_classic(full_width = F, html_font = "Times New Roman")
+```
+
+
+
+
 
 
 ***
