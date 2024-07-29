@@ -18,6 +18,7 @@ library(knitr)
 library(tidyverse)
 library(ggpubr)
 library(kableExtra)
+library(ggplot2)
 
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
@@ -103,7 +104,7 @@ adult_data_pos_social <- adult_data_pos[adult_data_pos$task %in% 'social', ]
 
 ** Function: Conduct One Sample T-Tests for ROIs**
 ```{r}
-
+# One sample t-test
 mass_t_tests <- function(df) {
   # Conduct one-sample t-tests to examine if ROI contrast is greater than 0
   df.t_tests = df %>%
@@ -119,6 +120,51 @@ mass_t_tests <- function(df) {
   
   # Conduct multiple comparisons correction
   stats <- p.adjust(df.t_tests$P,method='fdr')
+  P_adjust <- stats
+  Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+                                               ifelse(P_adjust < 0.05, "*", "")))
+  df.t_tests$P_adjust <- P_adjust
+  df.t_tests$Sig_adjust <- Sig_adjust
+  
+  return(df.t_tests)
+}
+
+
+# Two sample t-test
+mass_twos_t_tests <- function(df) {
+  # Conduct one-sample t-tests to examine if ROI contrast is greater than 0
+  df.t_tests <- data.frame(roi = character(),
+                           Statistic = numeric(),
+                           P = numeric(),
+                           Sig = character(),
+                           df = numeric(),
+                           Estimate = numeric(),
+                           CI_l = numeric(),
+                           CI_u = numeric(),
+                           MaxWidth = numeric(),
+                           P_adjust = numeric(),
+                           Sig_adjust = character())
+
+
+  for (n in 1:length(hyp_rois)) {
+    temp_df <- df[df$roi == hyp_rois[n],]
+    group1 <- temp_df[temp_df$group == 'kid',]$contrast_mean
+    group2 <- temp_df[temp_df$group == 'college',]$contrast_mean
+    temp_ttest <- t.test(group1, group2)
+    
+    df.t_tests[n,]$roi <- hyp_rois[n]
+    df.t_tests[n,]$Statistic <- temp_ttest$statistic
+    df.t_tests[n,]$P <- temp_ttest$p.value
+    df.t_tests[n,]$Sig <- ifelse(df.t_tests[n,]$P < 0.05, "*", "")
+    df.t_tests[n,]$df <- temp_ttest$parameter
+    df.t_tests[n,]$Estimate <- abs(temp_ttest$estimate[1] - temp_ttest$estimate[2])
+    df.t_tests[n,]$CI_l <- temp_ttest$conf.int[1]
+    df.t_tests[n,]$CI_u <- temp_ttest$conf.int[2]
+    df.t_tests[n,]$MaxWidth <- max(temp_df$contrast_mean)
+  }
+    
+  # Conduct multiple comparisons correction
+  stats <- p.adjust(df.t_tests$P, method='fdr')
   P_adjust <- stats
   Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
                                                ifelse(P_adjust < 0.05, "*", "")))
@@ -245,58 +291,83 @@ model_allg_pos_mdoors <- aov(contrast_mean ~ group*roi,
 summary(model_allg_pos_mdoors)
 ```
 
+
 ```{r}
-# Conduct t-tests between each group, for each ROI
-allg_data_pos_mdoors.t_tests = allg_data_pos_mdoors %>%
-               group_by(roi) %>%
-               summarise(Statistic = funs(t.test(.[group == 'kid'], .[group == 'college'])$statistic),
-                         P = t.test(contrast_mean, mu = 0)$p.value,
-                         Sig = ifelse(P < 0.05, "*", ""),
-                         df = t.test(contrast_mean, mu = 0)$parameter,
-                         Estimate = t.test(contrast_mean, mu = 0)$estimate,
-                         CI_l = t.test(contrast_mean, mu = 0)$conf.int[1],
-                         CI_u = t.test(contrast_mean, mu = 0)$conf.int[2],
-                         MaxWidth = max(contrast_mean))
+s1 <- adult_data_pos_mdoors.t_tests$Sig_adjust
+s2 <- adole_data_pos_mdoors.t_tests$Sig_adjust
+
+for (n in 1:length(s1)) {
+  if (s1[n] == "") {
+    s1[n] = "#FFFFFF"
+  } else {
+    s1[n] = "#0072B2"
+  }
+  if (s2[n] == "") {
+    s2[n] = "#FFFFFF"
+  } else {
+    s2[n] = "#D55E00"
+  }
+}
+
+test <- c(rbind(s1, s2))
+```
+
+```{r}
+allg_data_pos_mdoors$plot_color <- ''
+for (i_roi in unique(allg_data_pos_mdoors$roi)) {
+  temp_sig <- adole_data_pos_mdoors.t_tests[adole_data_pos_mdoors.t_tests$roi == i_roi,'Sig_adjust']
+  if (temp_sig == "") {
+    temp_color <- "#7D0006"
+  } else {
+    temp_color <- "#D55E00"
+  }
+  allg_data_pos_mdoors[allg_data_pos_mdoors$group == 'kid' & allg_data_pos_mdoors$roi == i_roi,]$plot_color <- temp_color
+  
+  temp_sig <- adult_data_pos_mdoors.t_tests[adult_data_pos_mdoors.t_tests$roi == i_roi,'Sig_adjust']
+  if (temp_sig == "") {
+    temp_color <- "#FFFFFF"
+  } else {
+    temp_color <- "#0072B2"
+  }
+  allg_data_pos_mdoors[allg_data_pos_mdoors$group == 'college' & allg_data_pos_mdoors$roi == i_roi,]$plot_color <- temp_color
+}
+```
 
 
-
-test <- allg_data_pos_mdoors %>%
-        select(-subject_id) %>%
-        group_by(roi, group) %>%
-        summarize_at(
-            vars(-group_cols(), -contrast_mean),
-            list(t.test = ~ list(t.test(. ~ contrast_mean))))
-
-# Conduct multiple comparisons correction
-stats <- p.adjust(df.t_tests$P,method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-df.t_tests$P_adjust <- P_adjust
-df.t_tests$Sig_adjust <- Sig_adjust
+```{r}
+allg_data_pos_mdoors.t_tests <- mass_twos_t_tests(allg_data_pos_mdoors)
 
 
 # Plot
 p <- ggbarplot(allg_data_pos_mdoors, x = 'roi', 
-               y = 'contrast_mean', add = 'mean_se',
-               color = 'group', position = position_dodge(0.8))
+               y = 'contrast_mean', add = 'mean_se', 
+               color = 'group', position = position_dodge(0.8), 
+               palette = c("#0072B2", "#D55E00", "#7D0006", "#FFFFFF"), fill = 'plot_color')
 p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
               data = allg_data_pos_mdoors.t_tests) + 
   theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
   scale_x_discrete(labels=hyp_rois_names)
 
-#ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_mdoors.png')
-
 ```
+
+
+
+
+
+
+
+
+
+
 
 
 ```{r}
 # Conduct t-tests between each group, for each ROI
-allg_data_pos_mdoors.t_tests <- allg_data_pos_mdoors %>% 
-                                group_by(roi) %>% 
-                                do(tidy(t.test(contrast_mean~group, data=.)))
-  
+allg_data_pos_mdoors.t_tests <- mass_t_tests(allg_data_pos_mdoors)
+
+
+
 # Conduct multiple comparisons correction
 stats <- p.adjust(allg_data_pos_mdoors.t_tests$p.value,method='fdr')
 P_adjust <- stats
@@ -306,8 +377,8 @@ allg_data_pos_mdoors.t_tests$P_adjust.
 
 
 
-<- P_adjust
-allg_data_pos_mdoors.t_tests$Sig_adjust <- Sig_adjust
+#<- P_adjust
+#allg_data_pos_mdoors.t_tests$Sig_adjust <- Sig_adjust
 
 
 # Plot
