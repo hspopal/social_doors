@@ -313,6 +313,32 @@ test <- c(rbind(s1, s2))
 ```
 
 ```{r}
+bar_fill_one_sample <- function(df, g1.t_tests, g2.t_tests) {
+  df$plot_color <- ''
+  for (i_roi in unique(df$roi)) {
+    temp_sig <- g1.t_tests[g1.t_tests$roi == i_roi,'Sig_adjust']
+    if (temp_sig == "") {
+      temp_color <- 'adole_not'
+    } else {
+      temp_color <- 'adole_sig'
+    }
+    df[df$group == 'kid' & df$roi == i_roi,]$plot_color <- temp_color
+    
+    temp_sig <- g2.t_tests[g2.t_tests$roi == i_roi,'Sig_adjust']
+    if (temp_sig == "") {
+      temp_color <- 'adult_not'
+    } else {
+      temp_color <- 'adult_sig'
+    }
+    df[df$group == 'college' & df$roi == i_roi,]$plot_color <- temp_color
+  }
+  
+  return(df)
+} 
+```
+
+
+```{r}
 allg_data_pos_mdoors$plot_color <- ''
 for (i_roi in unique(allg_data_pos_mdoors$roi)) {
   temp_sig <- adole_data_pos_mdoors.t_tests[adole_data_pos_mdoors.t_tests$roi == i_roi,'Sig_adjust']
@@ -356,51 +382,10 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
                       labels=c("Young Adult", "Adolescent")) + 
   guides(color = guide_legend(override.aes = list(fill = outline.colors)))
 
+ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_mdoors.png')
 ```
 
 
-
-
-
-
-
-
-
-
-
-
-```{r}
-# Conduct t-tests between each group, for each ROI
-allg_data_pos_mdoors.t_tests <- mass_t_tests(allg_data_pos_mdoors)
-
-
-
-# Conduct multiple comparisons correction
-stats <- p.adjust(allg_data_pos_mdoors.t_tests$p.value,method='fdr')
-P_adjust <- stats
-Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                             ifelse(P_adjust < 0.05, "*", "")))
-allg_data_pos_mdoors.t_tests$P_adjust.
-
-
-
-#<- P_adjust
-#allg_data_pos_mdoors.t_tests$Sig_adjust <- Sig_adjust
-
-
-# Plot
-p <- ggbarplot(allg_data_pos_mdoors, x = 'roi', 
-               y = 'contrast_mean', add = 'mean_se',
-               color = 'group', position = position_dodge(0.8))
-p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
-              data = allg_data_pos_mdoors.t_tests) + 
-  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
-  xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
-  scale_x_discrete(labels=hyp_rois_names)
-
-#ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_mdoors.png')
-
-```
 
 
 ### Social Task
@@ -419,24 +404,35 @@ summary(model_allg_pos_social)
 
 
 ```{r}
-# Conduct two-sample t-test
-allg_data_pos_social.t_tests <- mass_t_tests(allg_data_pos_social)
+allg_data_pos_social.t_tests <- mass_twos_t_tests(allg_data_pos_social)
 
+allg_data_pos_social <- bar_fill_one_sample(allg_data_pos_social, 
+                                            adole_data_pos_social.t_tests,
+                                            adult_data_pos_social.t_tests)
+
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
 
 # Plot
 p <- ggbarplot(allg_data_pos_social, x = 'roi', 
-               y = 'contrast_mean', add = 'mean_se',
-               color = 'group', position = position_dodge(0.8))
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
 p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
               data = allg_data_pos_social.t_tests) + 
-  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
-  scale_x_discrete(labels=hyp_rois_names)
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
 
 ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_social.png')
-
-
 ```
+
+
 
 
 
@@ -567,20 +563,32 @@ model_allg_all_mdoors <- aov(contrast_mean ~ group*roi,
 summary(model_allg_all_mdoors)
 ```
 
-```{r}
-# Two sample t-test
-allg_data_all_mdoors.t_tests <- mass_t_tests(allg_data_all_mdoors)
 
+```{r}
+allg_data_all_mdoors.t_tests <- mass_twos_t_tests(allg_data_all_mdoors)
+
+allg_data_all_mdoors <- bar_fill_one_sample(allg_data_all_mdoors, 
+                                            adole_data_all_mdoors.t_tests,
+                                            adult_data_all_mdoors.t_tests)
+
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
 
 # Plot
 p <- ggbarplot(allg_data_all_mdoors, x = 'roi', 
-               y = 'contrast_mean', add = 'mean_se',
-               color = 'group', position = position_dodge(0.8))
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
 p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
               data = allg_data_all_mdoors.t_tests) + 
-  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
-  scale_x_discrete(labels=hyp_rois_names)
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
 
 ggsave('../univariate_roi/allp_all_winVlos_anova_bar_mdoors.png')
 ```
@@ -602,19 +610,30 @@ summary(model_allg_all_social)
 
 
 ```{r}
-# Two sample t-test
-allg_data_all_social.t_tests <- mass_t_tests(allg_data_all_social)
+allg_data_all_social.t_tests <- mass_twos_t_tests(allg_data_all_social)
 
+allg_data_all_social <- bar_fill_one_sample(allg_data_all_social, 
+                                            adole_data_all_social.t_tests,
+                                            adult_data_all_social.t_tests)
+
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
 
 # Plot
 p <- ggbarplot(allg_data_all_social, x = 'roi', 
-               y = 'contrast_mean', add = 'mean_se',
-               color = 'group', position = position_dodge(0.8))
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
 p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
               data = allg_data_all_social.t_tests) + 
-  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
   xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
-  scale_x_discrete(labels=hyp_rois_names)
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
 
 ggsave('../univariate_roi/allp_all_winVlos_anova_bar_social.png')
 ```
