@@ -639,6 +639,122 @@ ggsave('../univariate_roi/allp_all_winVlos_anova_bar_social.png')
 ```
 
 
+# Combined Plots
+```{r, fig.height=8, fig.width=8}
+# Plot
+p1 <- ggbarplot(allg_data_pos_mdoors, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color') + 
+  geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_pos_mdoors.t_tests) + 
+  #theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(),
+        plot.title = element_text(face='bold')) + 
+  #xlab("\n") + 
+  ylab("Mean Response") + 
+  ggtitle('A. Positive Wins > All Losses Contrast') + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+
+p2 <- ggbarplot(allg_data_all_mdoors, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color') +
+  geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_all_mdoors.t_tests) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5), legend.position='right',
+        plot.title = element_text(face='bold')) + 
+  xlab("Regions of Interests") + ylab("Mean Response") + 
+  ggtitle('B. All Wins > All Losses Contrast') + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+
+multi_plot <- ggarrange(p1, p2, nrow = 2, common.legend = TRUE, legend = 'right',
+          heights = c(5,6.75), align = 'v') 
+
+annotate_figure(multi_plot, top = text_grob("ROI Responses for Monetary Task\n", 
+               face = "bold", size = 18))
+
+
+ggsave('../univariate_roi/allp_anova_bar_mdoors.png')
+```
+
+
+```{r, fig.height=8, fig.width=8}
+# Plot
+p1 <- ggbarplot(allg_data_pos_social, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color') + 
+  geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_pos_social.t_tests) + 
+  #theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(),
+        plot.title = element_text(face='bold')) + 
+  #xlab("\n") + 
+  ylab("Mean Response") + 
+  ggtitle('A. Positive Wins > All Losses Contrast') + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+
+p2 <- ggbarplot(allg_data_all_social, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color') +
+  geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_all_social.t_tests) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5), legend.position='right',
+        plot.title = element_text(face='bold')) + 
+  xlab("Regions of Interests") + ylab("Mean Response") + 
+  ggtitle('B. All Wins > All Losses Contrast') + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+
+multi_plot <- ggarrange(p1, p2, nrow = 2, common.legend = TRUE, legend = 'right',
+          heights = c(5,6.75), align = 'v') 
+
+annotate_figure(multi_plot, top = text_grob("ROI Responses for Social Task\n", 
+               face = "bold", size = 18))
+
+
+ggsave('../univariate_roi/allp_anova_bar_social.png')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Stats Table
 Create a stats table to summarize all univariate ROI analyses
