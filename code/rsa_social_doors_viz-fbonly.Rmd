@@ -183,7 +183,7 @@ all_sim_vcr_social_rois.ttests$p_adjust <- p.adjust(all_sim_vcr_social_rois.ttes
 
 ### ANOVA
 ```{r}
-anova_mod_sim_vcr <- aov(r ~ roi, data=all_sim_vcr_mdoors_rois)
+anova_mod_sim_vcr <- aov(r ~ roi*group, data=all_sim_vcr_mdoors_rois)
 summary(anova_mod_sim_vcr)
 ```
 
@@ -204,8 +204,8 @@ tukey.test <- TukeyHSD(anova_mod_sim_vcr)
 tukey.test
 ```
 
-```{r}
-all_sim_vcr_social_rois.two_ttests <- compare_means(r ~ roi, , 
+```{r eval = FALSE, echo = FALSE}
+all_sim_vcr_social_rois.two_ttests <- compare_means(r ~ roi, 
                                                     data = all_sim_vcr_mdoors_rois, 
                                                     method = "t.test",
                                                     p.adjust.method = 'fdr')
@@ -235,24 +235,166 @@ all_sim_vcr_mdoors_rois.ttests$Sig_adjust <- Sig_adjust
 
 p <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
-               fill=cbPalette[6],
+               fill=cbPalette[4], ylim=c(0,0.22),
                position = position_dodge(0.8))
 p + theme(axis.text.x = element_text(vjust = 0.5)) + 
   geom_signif(comparisons = list(c('region08', 'striatum_ventral'),
                                  c('region02', 'striatum_ventral')),
               map_signif_level = TRUE,
-              annotations = c('***','**'), y_position = c(0.10,0.09),
+              annotations = c('***','**'), y_position = c(0.11,0.09),
                             tip_length = 0, textsize = 6,
                             vjust=0.3) + 
-  geom_text(aes(label = Sig_adjust, y = 0.08), size = 6,
+  geom_text(aes(label = Sig_adjust, y = 0.09), size = 6,
               data = all_sim_vcr_mdoors_rois.ttests) + 
   scale_x_discrete(labels=roi_plot_label) + 
   xlab("Regions of Interests") + ylab("Spearman's rho") + 
-  ggtitle("Positive and Negative Win Similarity in Monetary Task") 
+  ggtitle("Positive and Negative Win Similarity in Monetary Task")
 
-ggsave('rsa_vcr_mdoors.png')
+#ggsave('rsa_vcr_mdoors.png')
 
 ```
+
+
+```{r}
+# One sample t-test
+mass_t_tests <- function(df) {
+  # Conduct one-sample t-tests to examine if ROI contrast is greater than 0
+  df.t_tests = df %>%
+               group_by(roi) %>%
+               summarise(Statistic = t.test(r, mu = 0)$statistic,
+                         P = t.test(r, mu = 0)$p.value,
+                         Sig = ifelse(P < 0.05, "*", ""),
+                         df = t.test(r, mu = 0)$parameter,
+                         Estimate = t.test(r, mu = 0)$estimate,
+                         CI_l = t.test(r, mu = 0)$conf.int[1],
+                         CI_u = t.test(r, mu = 0)$conf.int[2],
+                         MaxWidth = max(r))
+  
+  # Conduct multiple comparisons correction
+  stats <- p.adjust(df.t_tests$P,method='fdr')
+  P_adjust <- stats
+  Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+                                               ifelse(P_adjust < 0.05, "*", "")))
+  df.t_tests$P_adjust <- P_adjust
+  df.t_tests$Sig_adjust <- Sig_adjust
+  
+  return(df.t_tests)
+}
+
+
+# Two sample t-test
+mass_twos_t_tests <- function(df) {
+  # Conduct one-sample t-tests to examine if ROI contrast is greater than 0
+  df.t_tests <- data.frame(roi = character(),
+                           Statistic = numeric(),
+                           P = numeric(),
+                           Sig = character(),
+                           df = numeric(),
+                           Estimate = numeric(),
+                           CI_l = numeric(),
+                           CI_u = numeric(),
+                           MaxWidth = numeric(),
+                           P_adjust = numeric(),
+                           Sig_adjust = character())
+
+
+  for (n in 1:length(hyp_rois)) {
+    temp_df <- df[df$roi == hyp_rois[n],]
+    group1 <- temp_df[temp_df$group == 'kid',]$r
+    group2 <- temp_df[temp_df$group == 'adult',]$r
+    temp_ttest <- t.test(group1, group2)
+
+    df.t_tests[n,]$roi <- hyp_rois[n]
+    df.t_tests[n,]$Statistic <- temp_ttest$statistic
+    df.t_tests[n,]$P <- temp_ttest$p.value
+    df.t_tests[n,]$Sig <- ifelse(df.t_tests[n,]$P < 0.05, "*", "")
+    df.t_tests[n,]$df <- temp_ttest$parameter
+    df.t_tests[n,]$Estimate <- abs(temp_ttest$estimate[1] - temp_ttest$estimate[2])
+    df.t_tests[n,]$CI_l <- temp_ttest$conf.int[1]
+    df.t_tests[n,]$CI_u <- temp_ttest$conf.int[2]
+    df.t_tests[n,]$MaxWidth <- max(temp_df$r)
+  }
+    
+  # Conduct multiple comparisons correction
+  stats <- p.adjust(df.t_tests$P, method='fdr')
+  P_adjust <- stats
+  Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+                                               ifelse(P_adjust < 0.05, "*", "")))
+  df.t_tests$P_adjust <- P_adjust
+  df.t_tests$Sig_adjust <- Sig_adjust
+  
+  return(df.t_tests)
+}
+```
+
+
+```{r}
+bar_fill_one_sample <- function(df, g1.t_tests, g2.t_tests) {
+  df$plot_color <- ''
+  for (i_roi in unique(df$roi)) {
+    temp_sig <- g1.t_tests[g1.t_tests$roi == i_roi,'Sig_adjust']
+    if (temp_sig == "") {
+      temp_color <- 'adole_not'
+    } else {
+      temp_color <- 'adole_sig'
+    }
+    df[df$group == 'kid' & df$roi == i_roi,]$plot_color <- temp_color
+    
+    temp_sig <- g2.t_tests[g2.t_tests$roi == i_roi,'Sig_adjust']
+    if (temp_sig == "") {
+      temp_color <- 'adult_not'
+    } else {
+      temp_color <- 'adult_sig'
+    }
+    df[df$group == 'adult' & df$roi == i_roi,]$plot_color <- temp_color
+  }
+  
+  return(df)
+} 
+```
+
+
+```{r}
+all_sim_vcr_mdoors_rois_adole <- all_sim_vcr_mdoors_rois[all_sim_vcr_mdoors_rois$group %in% 'kid', ]
+all_sim_vcr_mdoors_rois_adult <- all_sim_vcr_mdoors_rois[all_sim_vcr_mdoors_rois$group %in% 'adult', ]
+all_sim_vcr_mdoors_rois_adole.t_tests <- mass_t_tests(all_sim_vcr_mdoors_rois_adole)
+all_sim_vcr_mdoors_rois_adult.t_tests <- mass_t_tests(all_sim_vcr_mdoors_rois_adult)
+all_sim_vcr_mdoors_rois.t_tests <- mass_twos_t_tests(all_sim_vcr_mdoors_rois)
+
+all_sim_vcr_mdoors_rois <- bar_fill_one_sample(all_sim_vcr_mdoors_rois, 
+                                            all_sim_vcr_mdoors_rois_adole.t_tests,
+                                            all_sim_vcr_mdoors_rois_adult.t_tests)
+
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
+
+# Plot
+p <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi', 
+               y = 'r', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
+p + geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
+              data = all_sim_vcr_mdoors_rois.t_tests) + 
+  geom_signif(comparisons = list(c('region08', 'striatum_ventral'),
+                                 c('region02', 'striatum_ventral')),
+              map_signif_level = TRUE,
+              annotations = c('***','**'), y_position = c(0.11,0.09),
+                            tip_length = 0, textsize = 6,
+                            vjust=0.3) + 
+  theme(axis.text.x = element_text(vjust = 0.5), legend.position='right') + 
+  xlab("Regions of Interests") + ylab("Spearman's Rho") + 
+  ggtitle("Positive and Negative Win Similarity in Monetary Task") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+#ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_mdoors.png')
+```
+
+
 
 
 
@@ -308,7 +450,7 @@ all_sim_vcr_social_rois.ttests$Sig_adjust <- Sig_adjust
 
 p <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
-               fill=cbPalette[6],
+               fill=cbPalette[5], ylim=c(0,0.22),
                position = position_dodge(0.8))
 p + theme(axis.text.x = element_text(vjust = 0.5)) + 
   geom_signif(comparisons = list(c('region08', 'region02'),
@@ -327,6 +469,211 @@ p + theme(axis.text.x = element_text(vjust = 0.5)) +
 ggsave('rsa_vcr_social.png')
 
 ```
+
+
+
+```{r}
+
+p1 <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi', 
+               y = 'r', add = 'mean_se',
+               fill=cbPalette[4], ylim=c(0,0.22),
+               position = position_dodge(0.8)) + 
+  #theme(axis.text.x = element_text(vjust = 0.5)) + 
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank()) + 
+  geom_signif(comparisons = list(c('region08', 'striatum_ventral'),
+                                 c('region02', 'striatum_ventral')),
+              map_signif_level = TRUE,
+              annotations = c('***','**'), y_position = c(0.11,0.09),
+                            tip_length = 0, textsize = 6,
+                            vjust=0.3) + 
+  geom_text(aes(label = Sig_adjust, y = 0.09), size = 6,
+              data = all_sim_vcr_mdoors_rois.ttests) + 
+  scale_x_discrete(labels=roi_plot_label) + 
+  #xlab("Regions of Interests") + 
+  ylab("Spearman's rho") + 
+  ggtitle("A) Monetary Task")
+
+
+
+p2 <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
+               y = 'r', add = 'mean_se',
+               fill=cbPalette[5], ylim=c(0,0.22),
+               position = position_dodge(0.8)) + 
+  theme(axis.text.x = element_text(vjust = 0.5)) + 
+  geom_signif(comparisons = list(c('region08', 'region02'),
+                                 c('region08', 'striatum_ventral'),
+                                 c('region02', 'striatum_ventral')),
+              map_signif_level = TRUE,
+              annotations = c('*','***','***'), y_position = c(0.14,0.16,0.18),
+                            tip_length = 0, textsize = 6,
+                            vjust=0.3) + 
+  geom_text(aes(label = Sig_adjust, y = 0.14), size = 6,
+              data = all_sim_vcr_social_rois.ttests) + 
+  scale_x_discrete(labels=roi_plot_label) + 
+  xlab("\nRegions of Interests") + 
+  ylab("Spearman's rho") + 
+  ggtitle("\nB) Social Task")
+
+
+multi_plot <- ggarrange(p1, p2, nrow = 2, common.legend = TRUE, legend = 'right',
+          heights=c(2,2), widths=c(1,1), align = 'v') 
+
+annotate_figure(multi_plot, top = text_grob("Positive and Negative Win Similarity", 
+               face = "bold", size = 18))
+
+
+ggsave('rsa_vcr_mdoors_social.png', height=8, width=5)
+```
+
+```{r}
+
+p1 <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi', 
+               y = 'r', add = 'mean_se',
+               fill=cbPalette[4], ylim=c(0,0.22),
+               position = position_dodge(0.8)) + 
+  theme(axis.text.x = element_text(vjust = 0.5)) + 
+  geom_signif(comparisons = list(c('region08', 'striatum_ventral'),
+                                 c('region02', 'striatum_ventral')),
+              map_signif_level = TRUE,
+              annotations = c('***','**'), y_position = c(0.16,0.14),
+                            tip_length = 0, textsize = 6,
+                            vjust=0.3) + 
+  geom_text(aes(label = Sig_adjust, y = 0.09), size = 6,
+              data = all_sim_vcr_mdoors_rois.ttests) + 
+  scale_x_discrete(labels=roi_plot_label) + 
+  xlab("\nRegions of Interests") + 
+  ylab("Spearman's rho") + 
+  ggtitle("A) Monetary Task")
+
+
+
+p2 <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
+               y = 'r', add = 'mean_se',
+               fill=cbPalette[5], ylim=c(0,0.22),
+               position = position_dodge(0.8)) + 
+  theme(axis.text.x = element_text(vjust = 0.5)) + 
+  theme(axis.text.y=element_blank(), axis.title.y = element_blank()) + 
+  geom_signif(comparisons = list(c('region08', 'region02'),
+                                 c('region08', 'striatum_ventral'),
+                                 c('region02', 'striatum_ventral')),
+              map_signif_level = TRUE,
+              annotations = c('*','***','***'), y_position = c(0.14,0.16,0.18),
+                            tip_length = 0, textsize = 6,
+                            vjust=0.3) + 
+  geom_text(aes(label = Sig_adjust, y = 0.14), size = 6,
+              data = all_sim_vcr_social_rois.ttests) + 
+  scale_x_discrete(labels=roi_plot_label) + 
+  xlab("\nRegions of Interests") + 
+  #ylab("Spearman's rho") + 
+  ggtitle("\nB) Social Task")
+
+
+multi_plot <- ggarrange(p1, p2, ncol = 2, common.legend = TRUE, legend = 'right',
+          widths=c(1.15,1), align = 'h') 
+
+annotate_figure(multi_plot, top = text_grob("Positive and Negative Win Similarity", 
+               face = "bold", size = 18))
+
+
+ggsave('rsa_vcr_mdoors_social.png', height=5, width=8)
+```
+
+
+### Two-Way ANOVA (ROI and Group)
+
+### ANOVA
+```{r}
+anova_mod_sim_vcr_group <- aov(r ~ roi*group, data=all_sim_vcr_social_rois)
+summary(anova_mod_sim_vcr_group)
+```
+
+#### Post-hoc Tests
+```{r}
+tukey.test <- TukeyHSD(anova_mod_sim_vcr_group)
+tukey.test
+```
+
+
+
+
+```{r}
+anova_mod_sim_vcr_group <- aov(r ~ roi*group, data=all_sim_vcr_mdoors_rois)
+summary(anova_mod_sim_vcr_group)
+```
+
+
+```{r}
+
+# Rearrange x-axis labels
+all_sim_vcr_mdoors_rois$roi <- factor(all_sim_vcr_mdoors_rois$roi, 
+                                      levels=roi_plot_order)
+
+# Specify significance signs
+Sig_adjust = ifelse(all_sim_vcr_mdoors_rois.ttests$p_adjust < 0.005, "***", 
+                    ifelse(all_sim_vcr_mdoors_rois.ttests$p_adjust < 0.01, "**", 
+                    ifelse(all_sim_vcr_mdoors_rois.ttests$p_adjust < 0.05, "*", "")))
+all_sim_vcr_mdoors_rois.ttests$Sig_adjust <- Sig_adjust
+
+
+p <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi', 
+               y = 'r', color='group', add = 'mean_se',
+               fill=cbPalette[4], ylim=c(0,0.22),
+               position = position_dodge(0.8))
+p + theme(axis.text.x = element_text(vjust = 0.5)) + 
+  geom_signif(comparisons = list(c('region08', 'striatum_ventral'),
+                                 c('region02', 'striatum_ventral')),
+              map_signif_level = TRUE,
+              annotations = c('***','**'), y_position = c(0.11,0.09),
+                            tip_length = 0, textsize = 6,
+                            vjust=0.3) + 
+  geom_text(aes(label = Sig_adjust, y = 0.09), size = 6,
+              data = all_sim_vcr_mdoors_rois.ttests) + 
+  scale_x_discrete(labels=roi_plot_label) + 
+  xlab("Regions of Interests") + ylab("Spearman's rho") + 
+  ggtitle("Positive and Negative Win Similarity in Monetary Task")
+
+
+#ggsave('rsa_vcr_social.png')
+
+```
+
+
+```{r}
+
+# Rearrange x-axis labels
+all_sim_vcr_social_rois$roi <- factor(all_sim_vcr_social_rois$roi, 
+                                      levels=roi_plot_order)
+
+# Specify significance signs
+Sig_adjust = ifelse(all_sim_vcr_social_rois.ttests$p_adjust < 0.005, "***", 
+                    ifelse(all_sim_vcr_social_rois.ttests$p_adjust < 0.01, "**", 
+                    ifelse(all_sim_vcr_social_rois.ttests$p_adjust < 0.05, "*", "")))
+all_sim_vcr_social_rois.ttests$Sig_adjust <- Sig_adjust
+
+
+p <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
+               y = 'r', color='group', add = 'mean_se',
+               fill=cbPalette[5], ylim=c(0,0.22),
+               position = position_dodge(0.8))
+p + theme(axis.text.x = element_text(vjust = 0.5)) + 
+  geom_signif(comparisons = list(c('region08', 'region02'),
+                                 c('region08', 'striatum_ventral'),
+                                 c('region02', 'striatum_ventral')),
+              map_signif_level = TRUE,
+              annotations = c('*','***','***'), y_position = c(0.14,0.16,0.18),
+                            tip_length = 0, textsize = 6,
+                            vjust=0.3) + 
+  geom_text(aes(label = Sig_adjust, y = 0.14), size = 6,
+              data = all_sim_vcr_social_rois.ttests) + 
+  scale_x_discrete(labels=roi_plot_label) + 
+  xlab("Regions of Interests") + ylab("Spearman's rho") + 
+  ggtitle("Positive and Negative Win Similarity in Social Task")
+
+#ggsave('rsa_vcr_social.png')
+
+```
+
+
 
 
 
@@ -357,7 +704,7 @@ rdm_tdomain_melt <- melt(rdm_tdomain)
 ggplot(rdm_tdomain_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
   geom_tile(width = 1, color = 'grey') +
   theme_minimal() + 
-  scale_fill_distiller(palette = "Greens", direction = 1) + 
+  scale_fill_distiller(palette = "Reds", direction = 1) + 
   labs(title = "Task Domain RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
@@ -387,7 +734,7 @@ rdm_valence_melt <- melt(rdm_valence)
 ggplot(rdm_valence_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
   geom_tile(width = 1, color = 'grey') +
   theme_minimal() + 
-  scale_fill_distiller(palette = "Greens", direction = 1) + 
+  scale_fill_distiller(palette = "Reds", direction = 1) + 
   labs(title = "Valence RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
@@ -418,7 +765,7 @@ rdm_outcome_melt <- melt(rdm_outcome)
 ggplot(rdm_outcome_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
   geom_tile(width = 1, color = 'grey') +
   theme_minimal() + 
-  scale_fill_distiller(palette = "Greens", direction = 1) + 
+  scale_fill_distiller(palette = "Reds", direction = 1) + 
   labs(title = "Outcome RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
@@ -450,7 +797,7 @@ rdm_outcval_melt <- melt(rdm_outcval)
 ggplot(rdm_outcval_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
   geom_tile(width = 1, color = 'grey') +
   theme_minimal() + 
-  scale_fill_distiller(palette = "Greens", direction = 1) + 
+  scale_fill_distiller(palette = "Reds", direction = 1) + 
   labs(title = "Outcome Valence RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
@@ -482,7 +829,7 @@ rdm_intract_melt <- melt(rdm_intract)
 ggplot(rdm_intract_melt, aes(x=Var1, y=ordered(Var2, levels = rev(sort(unique(Var2)))), fill=value)) +
   geom_tile(width = 1, color = 'grey') +
   theme_minimal() + 
-  scale_fill_distiller(palette = "Greens", direction = 1) + 
+  scale_fill_distiller(palette = "Reds", direction = 1) + 
   labs(title = "Valence Outcome Interaction RDM", x = "\nTask Conditions", y = "", fill = 'Dissimilarity') + 
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(face="bold", angle = 45, vjust = 0.5),
@@ -593,7 +940,7 @@ data_tdomain_rois.ttests$Sig_adjust <- Sig_adjust
 
 p <- ggbarplot(data_tdomain_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
-               fill=cbPalette[7],
+               fill='#DC3220',
                position = position_dodge(0.8))
 p + theme(axis.text.x = element_text(vjust = 0.5)) + 
   #geom_signif(comparisons = list(c('region08', 'region02'),
@@ -717,7 +1064,7 @@ data_valence_rois.ttests$Sig_adjust <- Sig_adjust
 
 p <- ggbarplot(data_valence_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
-               fill=cbPalette[7],
+               fill='#DC3220',
                position = position_dodge(0.8))
 p + theme(axis.text.x = element_text(vjust = 0.5)) + 
   #geom_signif(comparisons = list(c('region08', 'region02'),
@@ -800,7 +1147,7 @@ data_outcome_rois.ttests$Sig_adjust <- Sig_adjust
 
 p <- ggbarplot(data_outcome_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
-               fill=cbPalette[7],
+               fill='#DC3220',
                position = position_dodge(0.8))
 p + theme(axis.text.x = element_text(vjust = 0.5)) + 
   #geom_signif(comparisons = list(c('region08', 'region02'),
@@ -882,7 +1229,7 @@ data_outcval_rois.ttests$Sig_adjust <- Sig_adjust
 
 p <- ggbarplot(data_outcval_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
-               fill=cbPalette[7],
+               fill='#DC3220',
                position = position_dodge(0.8))
 p + theme(axis.text.x = element_text(vjust = 0.5)) + 
   geom_signif(comparisons = list(c('region08', 'striatum_ventral')),
@@ -963,7 +1310,7 @@ data_intract_rois.ttests$Sig_adjust <- Sig_adjust
 
 p <- ggbarplot(data_intract_rois, x = 'roi', 
                y = 'r', add = 'mean_se',
-               fill=cbPalette[7],
+               fill='#DC3220',
                position = position_dodge(0.8))
 p + theme(axis.text.x = element_text(vjust = 0.5)) + 
   #geom_signif(comparisons = list(c('region08', 'striatum_ventral')),
@@ -980,6 +1327,10 @@ p + theme(axis.text.x = element_text(vjust = 0.5)) +
 ggsave('rsa_intract.png')
 
 ```
+
+
+
+
 
 
 
