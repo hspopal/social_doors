@@ -391,7 +391,7 @@ p + geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
                       labels=c("Young Adult", "Adolescent")) + 
   guides(color = guide_legend(override.aes = list(fill = outline.colors)))
 
-#ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_mdoors.png')
+ggsave('rsa_vcr_mdoors.png')
 ```
 
 
@@ -402,7 +402,7 @@ p + geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
 
 ### ANOVA
 ```{r}
-anova_mod_sim_vcr <- aov(r ~ roi, data=all_sim_vcr_social_rois)
+anova_mod_sim_vcr <- aov(r ~ roi*group, data=all_sim_vcr_social_rois)
 summary(anova_mod_sim_vcr)
 ```
 
@@ -470,59 +470,108 @@ ggsave('rsa_vcr_social.png')
 
 ```
 
-
-
 ```{r}
+all_sim_vcr_social_rois_adole <- all_sim_vcr_social_rois[all_sim_vcr_social_rois$group %in% 'kid', ]
+all_sim_vcr_social_rois_adult <- all_sim_vcr_social_rois[all_sim_vcr_social_rois$group %in% 'adult', ]
+all_sim_vcr_social_rois_adole.t_tests <- mass_t_tests(all_sim_vcr_social_rois_adole)
+all_sim_vcr_social_rois_adult.t_tests <- mass_t_tests(all_sim_vcr_social_rois_adult)
+all_sim_vcr_social_rois.t_tests <- mass_twos_t_tests(all_sim_vcr_social_rois)
 
-p1 <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi', 
-               y = 'r', add = 'mean_se',
-               fill=cbPalette[4], ylim=c(0,0.22),
-               position = position_dodge(0.8)) + 
-  #theme(axis.text.x = element_text(vjust = 0.5)) + 
-  theme(axis.text.x=element_blank(), axis.title.x = element_blank()) + 
-  geom_signif(comparisons = list(c('region08', 'striatum_ventral'),
-                                 c('region02', 'striatum_ventral')),
-              map_signif_level = TRUE,
-              annotations = c('***','**'), y_position = c(0.11,0.09),
-                            tip_length = 0, textsize = 6,
-                            vjust=0.3) + 
-  geom_text(aes(label = Sig_adjust, y = 0.09), size = 6,
-              data = all_sim_vcr_mdoors_rois.ttests) + 
-  scale_x_discrete(labels=roi_plot_label) + 
-  #xlab("Regions of Interests") + 
-  ylab("Spearman's rho") + 
-  ggtitle("A) Monetary Task")
+all_sim_vcr_social_rois <- bar_fill_one_sample(all_sim_vcr_social_rois, 
+                                            all_sim_vcr_social_rois_adole.t_tests,
+                                            all_sim_vcr_social_rois_adult.t_tests)
 
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
 
-
-p2 <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
-               y = 'r', add = 'mean_se',
-               fill=cbPalette[5], ylim=c(0,0.22),
-               position = position_dodge(0.8)) + 
-  theme(axis.text.x = element_text(vjust = 0.5)) + 
+# Plot
+p <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
+               y = 'r', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
+p + geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
+              data = all_sim_vcr_social_rois.t_tests) + 
   geom_signif(comparisons = list(c('region08', 'region02'),
                                  c('region08', 'striatum_ventral'),
                                  c('region02', 'striatum_ventral')),
               map_signif_level = TRUE,
               annotations = c('*','***','***'), y_position = c(0.14,0.16,0.18),
                             tip_length = 0, textsize = 6,
+                            vjust=0.2) + 
+  theme(axis.text.x = element_text(vjust = 0.5), legend.position='right') + 
+  xlab("Regions of Interests") + ylab("Spearman's Rho") + 
+  ggtitle("Positive and Negative Win Similarity in Social Task") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+ggsave('rsa_vcr_social.png')
+```
+
+
+
+```{r}
+
+p1 <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi', 
+               y = 'r', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color', ylim=c(0,0.22)) + 
+  geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
+              data = all_sim_vcr_mdoors_rois.t_tests) + 
+  geom_signif(comparisons = list(c('region08', 'striatum_ventral'),
+                                 c('region02', 'striatum_ventral')),
+              map_signif_level = TRUE,
+              annotations = c('***','**'), y_position = c(0.14,0.16),
+                            tip_length = 0, textsize = 6,
                             vjust=0.3) + 
-  geom_text(aes(label = Sig_adjust, y = 0.14), size = 6,
-              data = all_sim_vcr_social_rois.ttests) + 
-  scale_x_discrete(labels=roi_plot_label) + 
-  xlab("\nRegions of Interests") + 
-  ylab("Spearman's rho") + 
-  ggtitle("\nB) Social Task")
+  theme(axis.text.x = element_text(vjust = 0.5), legend.position='bottom') + 
+  xlab("\nRegions of Interests") + ylab("Spearman's Rho") + 
+  ggtitle("A) Monetary Task") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
 
 
-multi_plot <- ggarrange(p1, p2, nrow = 2, common.legend = TRUE, legend = 'right',
-          heights=c(2,2), widths=c(1,1), align = 'v') 
+
+p2 <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
+               y = 'r', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color', ylim=c(0,0.22)) + 
+  geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
+              data = all_sim_vcr_social_rois.t_tests) + 
+  geom_signif(comparisons = list(c('region08', 'region02'),
+                                 c('region08', 'striatum_ventral'),
+                                 c('region02', 'striatum_ventral')),
+              map_signif_level = TRUE,
+              annotations = c('*','***','***'), y_position = c(0.14,0.16,0.18),
+                            tip_length = 0, textsize = 6,
+                            vjust=0.2) + 
+  theme(axis.text.x = element_text(vjust = 0.5), legend.position='Bottom') + 
+  theme(axis.text.y=element_blank(), axis.title.y = element_blank()) + 
+  xlab("\nRegions of Interests") +
+  ggtitle("B) Social Task") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+
+multi_plot <- ggarrange(p1, p2, ncol = 2, common.legend = TRUE, legend = 'bottom',
+          widths=c(1.15,1), align = 'h') 
 
 annotate_figure(multi_plot, top = text_grob("Positive and Negative Win Similarity", 
                face = "bold", size = 18))
 
 
-ggsave('rsa_vcr_mdoors_social.png', height=8, width=5)
+ggsave('rsa_vcr_mdoors_social.png', height=5, width=9)
 ```
 
 ```{r}
@@ -897,7 +946,7 @@ data_tdomain_rois.ttests$p_adjust <- p.adjust(data_tdomain_rois.ttests$p,
 
 ### ANOVA
 ```{r}
-anova_mod_tdomain <- aov(r ~ roi, data=data_tdomain_rois)
+anova_mod_tdomain <- aov(r ~ roi*group, data=data_tdomain_rois)
 summary(anova_mod_tdomain)
 ```
 
@@ -925,6 +974,40 @@ stats
 
 
 ### Visualization
+
+```{r}
+data_tdomain_rois_adole <- data_tdomain_rois[data_tdomain_rois$group %in% 'kid', ]
+data_tdomain_rois_adult <- data_tdomain_rois[data_tdomain_rois$group %in% 'adult', ]
+data_tdomain_rois_adole.t_tests <- mass_t_tests(all_sim_vcr_mdoors_rois_adole)
+data_tdomain_rois_adult.t_tests <- mass_t_tests(all_sim_vcr_mdoors_rois_adult)
+data_tdomain_rois.t_tests <- mass_twos_t_tests(data_tdomain_rois)
+
+data_tdomain_rois <- bar_fill_one_sample(data_tdomain_rois, 
+                                            data_tdomain_rois_adole.t_tests,
+                                            data_tdomain_rois_adult.t_tests)
+
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
+
+# Plot
+p <- ggbarplot(data_tdomain_rois, x = 'roi', 
+               y = 'r', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
+p + geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
+              data = data_tdomain_rois.t_tests) + 
+  theme(axis.text.x = element_text(vjust = 0.5), legend.position='right') + 
+  xlab("Regions of Interests") + ylab("Spearman's Rho") + 
+  ggtitle("Positive and Negative Win Similarity in Monetary Task") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+```
+
+
 ```{r}
 
 # Rearrange x-axis labels
@@ -1021,7 +1104,7 @@ data_valence_rois.ttests <- calculate_rsa_stats(data_valence_rois)
 
 ### ANOVA
 ```{r}
-anova_mod_valence <- aov(r ~ roi, data=data_valence_rois)
+anova_mod_valence <- aov(r ~ roi*group, data=data_valence_rois)
 summary(anova_mod_valence)
 ```
 
@@ -1050,6 +1133,40 @@ head(stats)
 
 
 ### Visualization
+
+```{r}
+data_valence_rois_adole <- data_valence_rois[data_valence_rois$group %in% 'kid', ]
+data_valence_rois_adult <- data_valence_rois[data_valence_rois$group %in% 'adult', ]
+data_valence_rois_adole.t_tests <- mass_t_tests(data_valence_rois_adole)
+data_valence_rois_adult.t_tests <- mass_t_tests(data_valence_rois_adult)
+data_valence_rois.t_tests <- mass_twos_t_tests(data_valence_rois)
+
+data_valence_rois <- bar_fill_one_sample(data_valence_rois, 
+                                            data_tdomain_rois_adole.t_tests,
+                                            data_tdomain_rois_adult.t_tests)
+
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
+
+# Plot
+p <- ggbarplot(data_valence_rois, x = 'roi', 
+               y = 'r', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
+p + geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
+              data = data_valence_rois.t_tests) + 
+  theme(axis.text.x = element_text(vjust = 0.5), legend.position='right') + 
+  xlab("Regions of Interests") + ylab("Spearman's Rho") + 
+  ggtitle("Positive and Negative Win Similarity in Monetary Task") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+```
+
+
 ```{r}
 # Rearrange x-axis labels
 data_valence_rois$roi <- factor(data_valence_rois$roi, 
@@ -1105,7 +1222,7 @@ data_outcome_rois.ttests <- calculate_rsa_stats(data_outcome_rois)
 
 ### ANOVA
 ```{r}
-anova_mod_outcome <- aov(r ~ roi, data=data_outcome_rois)
+anova_mod_outcome <- aov(r ~ roi*group, data=data_outcome_rois)
 summary(anova_mod_outcome)
 ```
 
@@ -1133,6 +1250,38 @@ head(stats)
 
 
 ### Visualization
+```{r}
+data_outcome_rois_adole <- data_outcome_rois[data_outcome_rois$group %in% 'kid', ]
+data_outcome_rois_adult <- data_outcome_rois[data_outcome_rois$group %in% 'adult', ]
+data_outcome_rois_adole.t_tests <- mass_t_tests(data_outcome_rois_adole)
+data_outcome_rois_adult.t_tests <- mass_t_tests(data_outcome_rois_adult)
+data_outcome_rois.t_tests <- mass_twos_t_tests(data_outcome_rois)
+
+data_outcome_rois <- bar_fill_one_sample(data_outcome_rois, 
+                                            data_tdomain_rois_adole.t_tests,
+                                            data_tdomain_rois_adult.t_tests)
+
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
+
+# Plot
+p <- ggbarplot(data_outcome_rois, x = 'roi', 
+               y = 'r', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
+p + geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
+              data = data_outcome_rois.t_tests) + 
+  theme(axis.text.x = element_text(vjust = 0.5), legend.position='right') + 
+  xlab("Regions of Interests") + ylab("Spearman's Rho") + 
+  ggtitle("Positive and Negative Win Similarity in Monetary Task") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+```
+
 ```{r}
 # Rearrange x-axis labels
 data_outcome_rois$roi <- factor(data_outcome_rois$roi, 
@@ -1188,7 +1337,7 @@ data_outcval_rois.ttests <- calculate_rsa_stats(data_outcval_rois)
 
 ### ANOVA
 ```{r}
-anova_mod_outcval <- aov(r ~ roi, data=data_outcval_rois)
+anova_mod_outcval <- aov(r ~ roi*group, data=data_outcval_rois)
 summary(anova_mod_outcval)
 ```
 
@@ -1215,6 +1364,38 @@ head(stats)
 
 
 ### Visualization
+```{r}
+data_outcval_rois_adole <- data_outcval_rois[data_outcval_rois$group %in% 'kid', ]
+data_outcval_rois_adult <- data_outcval_rois[data_outcval_rois$group %in% 'adult', ]
+data_outcval_rois_adole.t_tests <- mass_t_tests(data_outcval_rois_adole)
+data_outcval_rois_adult.t_tests <- mass_t_tests(data_outcval_rois_adult)
+data_outcval_rois.t_tests <- mass_twos_t_tests(data_outcval_rois)
+
+data_outcval_rois <- bar_fill_one_sample(data_outcval_rois, 
+                                            data_tdomain_rois_adole.t_tests,
+                                            data_tdomain_rois_adult.t_tests)
+
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
+
+# Plot
+p <- ggbarplot(data_outcval_rois, x = 'roi', 
+               y = 'r', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
+p + geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
+              data = data_outcval_rois.t_tests) + 
+  theme(axis.text.x = element_text(vjust = 0.5), legend.position='right') + 
+  xlab("Regions of Interests") + ylab("Spearman's Rho") + 
+  ggtitle("Positive and Negative Win Similarity in Monetary Task") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+```
+
 ```{r}
 # Rearrange x-axis labels
 data_outcval_rois$roi <- factor(data_outcval_rois$roi, 
@@ -1268,7 +1449,7 @@ data_intract_rois.ttests <- calculate_rsa_stats(data_intract_rois)
 
 ### ANOVA
 ```{r}
-anova_mod_intract <- aov(r ~ roi, data=data_intract_rois)
+anova_mod_intract <- aov(r ~ roi*group, data=data_intract_rois)
 summary(anova_mod_intract)
 ```
 
@@ -1296,6 +1477,38 @@ head(stats)
 
 
 ### Visualization
+```{r}
+data_intract_rois_adole <- data_intract_rois[data_intract_rois$group %in% 'kid', ]
+data_intract_rois_adult <- data_intract_rois[data_intract_rois$group %in% 'adult', ]
+data_intract_rois_adole.t_tests <- mass_t_tests(data_intract_rois_adole)
+data_intract_rois_adult.t_tests <- mass_t_tests(data_intract_rois_adult)
+data_intract_rois.t_tests <- mass_twos_t_tests(data_intract_rois)
+
+data_intract_rois <- bar_fill_one_sample(data_intract_rois, 
+                                            data_tdomain_rois_adole.t_tests,
+                                            data_tdomain_rois_adult.t_tests)
+
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
+
+# Plot
+p <- ggbarplot(data_intract_rois, x = 'roi', 
+               y = 'r', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
+p + geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
+              data = data_intract_rois.t_tests) + 
+  theme(axis.text.x = element_text(vjust = 0.5), legend.position='right') + 
+  xlab("Regions of Interests") + ylab("Spearman's Rho") + 
+  ggtitle("Positive and Negative Win Similarity in Monetary Task") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+```
+
 ```{r}
 # Rearrange x-axis labels
 data_intract_rois$roi <- factor(data_intract_rois$roi, 
