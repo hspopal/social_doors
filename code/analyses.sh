@@ -14,10 +14,10 @@ subj_list=( 010 013 028 036 3845 3846 3848 3849 3852 3855
             5133 5136 5140 5145 6003 6004 6005 6006 )
 
 for subj in "${subj_list[@]}"; do 
-    sshpass -p "Lyra1012onix" rsync tuk12127@cla27562.tu.temple.edu:/data/projects/social_doors/derivatives/fmriprep/sub-${subj}/func/sub-${subj}_task-mdoors_run-1_desc-confounds_timeseries.tsv derivatives/fmriprep/sub-${subj}/func/
-    sshpass -p "Lyra1012onix" rsync tuk12127@cla27562.tu.temple.edu:/data/projects/social_doors/derivatives/fmriprep/sub-${subj}/func/sub-${subj}_task-mdoors_run-2_desc-confounds_timeseries.tsv derivatives/fmriprep/sub-${subj}/func/
-    sshpass -p "Lyra1012onix" rsync tuk12127@cla27562.tu.temple.edu:/data/projects/social_doors/derivatives/fmriprep/sub-${subj}/func/sub-${subj}_task-social_run-1_desc-confounds_timeseries.tsv derivatives/fmriprep/sub-${subj}/func/
-    sshpass -p "Lyra1012onix" rsync tuk12127@cla27562.tu.temple.edu:/data/projects/social_doors/derivatives/fmriprep/sub-${subj}/func/sub-${subj}_task-social_run-2_desc-confounds_timeseries.tsv derivatives/fmriprep/sub-${subj}/func/
+    sshpass -p "" rsync tuk12127@cla27562.tu.temple.edu:/data/projects/social_doors/derivatives/fmriprep/sub-${subj}/func/sub-${subj}_task-mdoors_run-1_desc-confounds_timeseries.tsv derivatives/fmriprep/sub-${subj}/func/
+    sshpass -p "" rsync tuk12127@cla27562.tu.temple.edu:/data/projects/social_doors/derivatives/fmriprep/sub-${subj}/func/sub-${subj}_task-mdoors_run-2_desc-confounds_timeseries.tsv derivatives/fmriprep/sub-${subj}/func/
+    sshpass -p "" rsync tuk12127@cla27562.tu.temple.edu:/data/projects/social_doors/derivatives/fmriprep/sub-${subj}/func/sub-${subj}_task-social_run-1_desc-confounds_timeseries.tsv derivatives/fmriprep/sub-${subj}/func/
+    sshpass -p "" rsync tuk12127@cla27562.tu.temple.edu:/data/projects/social_doors/derivatives/fmriprep/sub-${subj}/func/sub-${subj}_task-social_run-2_desc-confounds_timeseries.tsv derivatives/fmriprep/sub-${subj}/func/
 done
 
 # Prep
