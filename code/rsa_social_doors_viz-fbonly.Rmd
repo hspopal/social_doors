@@ -43,7 +43,7 @@ library(stringr)
 library(kableExtra)
 library(grid)
 library(pBrackets)
-
+library(WebPower)
 ```
 
 ## Experiment Parameters
@@ -82,6 +82,21 @@ hyp_rois_names <- c('CB Region 8','CB Region 2',
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 ```
+
+
+
+
+# Power Analysis
+Group X ROI
+```{r}
+n_groups = 2 * 3
+
+wp.kanova(n = 61, ndf = 2, f = 0.2, ng = n_groups, alpha = 0.05)
+
+```
+
+
+
 
 
 
@@ -184,7 +199,7 @@ all_sim_vcr_social_rois.ttests$p_adjust <- p.adjust(all_sim_vcr_social_rois.ttes
 ### ANOVA
 ```{r}
 anova_mod_sim_vcr <- aov(r ~ roi*group, data=all_sim_vcr_mdoors_rois)
-summary(anova_mod_sim_vcr)
+report(anova_mod_sim_vcr)
 ```
 
 
@@ -403,7 +418,7 @@ ggsave('rsa_vcr_mdoors.png')
 ### ANOVA
 ```{r}
 anova_mod_sim_vcr <- aov(r ~ roi*group, data=all_sim_vcr_social_rois)
-summary(anova_mod_sim_vcr)
+report(anova_mod_sim_vcr)
 ```
 
 ```{r}

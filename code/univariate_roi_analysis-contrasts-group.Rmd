@@ -19,6 +19,7 @@ library(tidyverse)
 library(ggpubr)
 library(kableExtra)
 library(ggplot2)
+library(report)
 
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
@@ -288,7 +289,7 @@ allg_data_pos_mdoors <- allg_data_pos[allg_data_pos$task %in% 'mdoors', ]
 # Conduct ANOVA
 model_allg_pos_mdoors <- aov(contrast_mean ~ group*roi,
                            data = allg_data_pos_mdoors)
-summary(model_allg_pos_mdoors)
+report(model_allg_pos_mdoors)
 ```
 
 
@@ -399,7 +400,7 @@ allg_data_pos_social <- allg_data_pos[allg_data_pos$task %in% 'social', ]
 # Conduct ANOVA
 model_allg_pos_social <- aov(contrast_mean ~ group*roi,
                            data = allg_data_pos_social)
-summary(model_allg_pos_social)
+report(model_allg_pos_social)
 ```
 
 
@@ -560,7 +561,7 @@ allg_data_all_mdoors <- allg_data_all[allg_data_all$task %in% 'mdoors', ]
 # ANOVA
 model_allg_all_mdoors <- aov(contrast_mean ~ group*roi,
                            data = allg_data_all_mdoors)
-summary(model_allg_all_mdoors)
+report(model_allg_all_mdoors)
 ```
 
 
@@ -605,7 +606,7 @@ allg_data_all_social <- allg_data_all[allg_data_all$task %in% 'social', ]
 # ANOVA
 model_allg_all_social <- aov(contrast_mean ~ group*roi,
                            data = allg_data_all_social)
-summary(model_allg_all_social)
+report(model_allg_all_social)
 ```
 
 
@@ -653,7 +654,7 @@ p1 <- ggbarplot(allg_data_pos_mdoors, x = 'roi',
         plot.title = element_text(face='bold')) + 
   #xlab("\n") + 
   ylab("Mean Response") + 
-  ggtitle('A. Positive Wins > All Losses Contrast') + 
+  ggtitle('A. Positive Wins > Positive Losses Contrast') + 
   #scale_x_discrete(labels=hyp_rois_names) + 
   scale_fill_manual(values=fill.colors) + 
   guides(fill = FALSE) + 
@@ -704,7 +705,7 @@ p1 <- ggbarplot(allg_data_pos_social, x = 'roi',
         plot.title = element_text(face='bold')) + 
   #xlab("\n") + 
   ylab("Mean Response") + 
-  ggtitle('A. Positive Wins > All Losses Contrast') + 
+  ggtitle('A. Positive Wins > Positive Losses Contrast') + 
   #scale_x_discrete(labels=hyp_rois_names) + 
   scale_fill_manual(values=fill.colors) + 
   guides(fill = FALSE) + 

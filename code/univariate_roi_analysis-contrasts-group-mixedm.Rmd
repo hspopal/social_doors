@@ -1,0 +1,946 @@
+---
+title: "Univariate ROI Group Analysis"
+author: "Haroon Popal"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: 
+      collapsed: false
+    df_print: paged
+    css: !expr here::here("./code/style_srk_behavioral.css")
+
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(tidyverse)
+library(ggpubr)
+library(kableExtra)
+library(ggplot2)
+library(report)
+library(lmerTest)
+
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+opts_knit$set(root.dir = "/Users/haroonpopal/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/univariate_roi/")
+```
+
+
+
+```{r}
+library(psych)
+library(ggpubr)
+library(tidyverse)
+library(lmerTest)
+```
+
+
+# Introduction
+
+Helpful resource on [mixed effect models for fMRI](https://neuranna.github.io/mixedmodels-fmri/index.html)
+
+## Regions of Interest
+
+### King 2019 Atlas
+![](../misc/king_figure.png)
+
+We will use regions 1 and 2 as control regions since there are related to motor processing. For ROIs we will use regions 5, 6, 7, 8, 9, and 10 since they all overall with crus I and II which have been the main regions implicated in social cognition. There are also some studies which point to Lobule VI and Crus II's involvement in reward processing.
+
+
+## Import Data
+```{r}
+participants <- read.table(file='../participants_good.tsv', sep = '\t', header = TRUE)
+participants
+```
+
+
+## Import first level ROI data
+```{r}
+all_sub_roi_con <- read.csv('../univariate_roi/all_sub_roi_contrasts.csv')
+all_sub_roi_con$subject_id <- all_sub_roi_con$subj
+
+# Use "adult as group label
+all_sub_roi_con$group[all_sub_roi_con$group == 'control'] <- 'college'
+
+all_sub_roi_con
+
+```
+
+
+### Define hypothesis ROIs
+```{r}
+hyp_rois <- c('TPJ_b-social','ATL_b-social','AMG_r-social','PCC_b-social','dmPFC_b-social',
+              'vmPFC_b-reward',
+              'region01','region02','region05','region06','region07',
+              'region08','region09','region10', 
+              'striatum_ventral','striatum_dorsala','striatum_dorsalp')
+
+hyp_rois_names <- c('TPJ','ATL','AMG (r)','PCC','dmPFC',
+                    'vmPFC',
+                    'CB Region 1','CB Region 2','CB Region 5',
+                    'CB Region 6','CB Region 7','CB Region 8','CB Region 9','CB Region 10',
+                    'Ventral Striatum','Anterior \n Dorsal Striatum','Posterior \n Dorsal Striatum')
+
+# Turn ROI column into a factor for sorting during visualization
+all_sub_roi_con$roi <- factor(all_sub_roi_con$roi, levels=hyp_rois)
+```
+
+
+
+
+# Positive Wins vs Loses
+
+## Young Adults
+```{r}
+# Filter data for group, contrast, and ROIs
+adult_data <- all_sub_roi_con[all_sub_roi_con$group %in% 'college', ]
+adult_data_pos <- adult_data[adult_data$contrast %in% 'positive_winVlos', ]
+adult_data_pos <- adult_data_pos[adult_data_pos$roi %in% hyp_rois, ]
+
+# Filter for task
+adult_data_pos_mdoors <- adult_data_pos[adult_data_pos$task %in% 'mdoors', ]
+adult_data_pos_social <- adult_data_pos[adult_data_pos$task %in% 'social', ]
+```
+
+
+** Function: Conduct One Sample T-Tests for ROIs**
+```{r}
+# One sample t-test
+mass_t_tests <- function(df) {
+  # Conduct one-sample t-tests to examine if ROI contrast is greater than 0
+  df.t_tests = df %>%
+               group_by(roi) %>%
+               summarise(Statistic = t.test(contrast_mean, mu = 0)$statistic,
+                         P = t.test(contrast_mean, mu = 0)$p.value,
+                         Sig = ifelse(P < 0.05, "*", ""),
+                         df = t.test(contrast_mean, mu = 0)$parameter,
+                         Estimate = t.test(contrast_mean, mu = 0)$estimate,
+                         CI_l = t.test(contrast_mean, mu = 0)$conf.int[1],
+                         CI_u = t.test(contrast_mean, mu = 0)$conf.int[2],
+                         MaxWidth = max(contrast_mean))
+  
+  # Conduct multiple comparisons correction
+  stats <- p.adjust(df.t_tests$P,method='fdr')
+  P_adjust <- stats
+  Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+                                               ifelse(P_adjust < 0.05, "*", "")))
+  df.t_tests$P_adjust <- P_adjust
+  df.t_tests$Sig_adjust <- Sig_adjust
+  
+  return(df.t_tests)
+}
+
+
+# Two sample t-test
+mass_twos_t_tests <- function(df) {
+  # Conduct one-sample t-tests to examine if ROI contrast is greater than 0
+  df.t_tests <- data.frame(roi = character(),
+                           Statistic = numeric(),
+                           P = numeric(),
+                           Sig = character(),
+                           df = numeric(),
+                           Estimate = numeric(),
+                           CI_l = numeric(),
+                           CI_u = numeric(),
+                           MaxWidth = numeric(),
+                           P_adjust = numeric(),
+                           Sig_adjust = character())
+
+
+  for (n in 1:length(hyp_rois)) {
+    temp_df <- df[df$roi == hyp_rois[n],]
+    group1 <- temp_df[temp_df$group == 'kid',]$contrast_mean
+    group2 <- temp_df[temp_df$group == 'college',]$contrast_mean
+    temp_ttest <- t.test(group1, group2)
+    
+    df.t_tests[n,]$roi <- hyp_rois[n]
+    df.t_tests[n,]$Statistic <- temp_ttest$statistic
+    df.t_tests[n,]$P <- temp_ttest$p.value
+    df.t_tests[n,]$Sig <- ifelse(df.t_tests[n,]$P < 0.05, "*", "")
+    df.t_tests[n,]$df <- temp_ttest$parameter
+    df.t_tests[n,]$Estimate <- abs(temp_ttest$estimate[1] - temp_ttest$estimate[2])
+    df.t_tests[n,]$CI_l <- temp_ttest$conf.int[1]
+    df.t_tests[n,]$CI_u <- temp_ttest$conf.int[2]
+    df.t_tests[n,]$MaxWidth <- max(temp_df$contrast_mean)
+  }
+    
+  # Conduct multiple comparisons correction
+  stats <- p.adjust(df.t_tests$P, method='fdr')
+  P_adjust <- stats
+  Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+                                               ifelse(P_adjust < 0.05, "*", "")))
+  df.t_tests$P_adjust <- P_adjust
+  df.t_tests$Sig_adjust <- Sig_adjust
+  
+  return(df.t_tests)
+}
+
+```
+
+
+
+### Monetary Task
+```{r}
+# Conduct one-sample t-tests to examine if ROI contrast is greater than 0
+adult_data_pos_mdoors.t_tests <- mass_t_tests(adult_data_pos_mdoors)
+
+# Plot
+p <- ggbarplot(adult_data_pos_mdoors, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se',
+               position = position_dodge(0.8))
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = adult_data_pos_mdoors.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
+  scale_x_discrete(labels=hyp_rois_names)
+
+ggsave('../univariate_roi/adult_pos_winVlos_ttest_bar_mdoors.png')
+```
+
+
+
+### Social Task
+```{r}
+# Conduct one-sample t-tests to examine if ROI contrast is greater than 0
+adult_data_pos_social.t_tests <- mass_t_tests(adult_data_pos_social)
+
+
+# Plot
+p <- ggbarplot(adult_data_pos_social, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se',
+               position = position_dodge(0.8))
+p + geom_text(aes(label = Sig_adjust, y = 0.35), size = 6,
+              data = adult_data_pos_social.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
+  scale_x_discrete(labels=hyp_rois_names)
+
+ggsave('../univariate_roi/adult_pos_winVlos_ttest_bar_social.png')
+```
+
+
+## Adolescents
+```{r}
+# Filter data
+adole_data <- all_sub_roi_con[all_sub_roi_con$group %in% 'kid', ]
+adole_data_pos <- adole_data[adole_data$contrast %in% 'positive_winVlos', ]
+adole_data_pos <- adole_data_pos[adole_data_pos$roi %in% hyp_rois, ]
+
+adole_data_pos_mdoors <- adole_data_pos[adole_data_pos$task %in% 'mdoors', ]
+adole_data_pos_social <- adole_data_pos[adole_data_pos$task %in% 'social', ]
+```
+
+### Monetary Task
+```{r}
+# One sample t-tests
+adole_data_pos_mdoors.t_tests <- mass_t_tests(adole_data_pos_mdoors)
+
+
+# Plot
+p <- ggbarplot(adole_data_pos_mdoors, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se',
+               position = position_dodge(0.8))
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = adole_data_pos_mdoors.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
+  scale_x_discrete(labels=hyp_rois_names)
+
+ggsave('../univariate_roi/adole_pos_winVlos_ttest_bar_mdoors.png')
+```
+
+
+### Social Task
+```{r}
+# One sample t-tests
+adole_data_pos_social.t_tests <- mass_t_tests(adole_data_pos_social)
+
+
+# Plot
+p <- ggbarplot(adole_data_pos_social, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se',
+               position = position_dodge(0.8))
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = adole_data_pos_social.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
+  scale_x_discrete(labels=hyp_rois_names)
+
+ggsave('../univariate_roi/adole_pos_winVlos_ttest_bar_social.png')
+```
+
+
+
+## Group Differences
+
+```{r}
+# Filter data
+allg_data_pos <- all_sub_roi_con[all_sub_roi_con$contrast %in% 'positive_winVlos', ]
+allg_data_pos <- allg_data_pos[allg_data_pos$roi %in% hyp_rois, ]
+```
+
+### Monetary Task
+
+```{r}
+allg_data_pos_mdoors <- allg_data_pos[allg_data_pos$task %in% 'mdoors', ]
+```
+
+```{r}
+# Conduct mixed model regression
+model_allg_pos_mdoors <- lmer(contrast_mean ~ 0 + roi*group + (1 | subject_id),
+                           data = allg_data_pos_mdoors, REML=FALSE)
+coef(summary(model_allg_pos_mdoors))
+```
+
+```{r}
+ls_means(model_allg_pos_mdoors)
+```
+
+
+
+```{r}
+s1 <- adult_data_pos_mdoors.t_tests$Sig_adjust
+s2 <- adole_data_pos_mdoors.t_tests$Sig_adjust
+
+for (n in 1:length(s1)) {
+  if (s1[n] == "") {
+    s1[n] = "#FFFFFF"
+  } else {
+    s1[n] = "#0072B2"
+  }
+  if (s2[n] == "") {
+    s2[n] = "#FFFFFF"
+  } else {
+    s2[n] = "#D55E00"
+  }
+}
+
+test <- c(rbind(s1, s2))
+```
+
+```{r}
+bar_fill_one_sample <- function(df, g1.t_tests, g2.t_tests) {
+  df$plot_color <- ''
+  for (i_roi in unique(df$roi)) {
+    temp_sig <- g1.t_tests[g1.t_tests$roi == i_roi,'Sig_adjust']
+    if (temp_sig == "") {
+      temp_color <- 'adole_not'
+    } else {
+      temp_color <- 'adole_sig'
+    }
+    df[df$group == 'kid' & df$roi == i_roi,]$plot_color <- temp_color
+    
+    temp_sig <- g2.t_tests[g2.t_tests$roi == i_roi,'Sig_adjust']
+    if (temp_sig == "") {
+      temp_color <- 'adult_not'
+    } else {
+      temp_color <- 'adult_sig'
+    }
+    df[df$group == 'college' & df$roi == i_roi,]$plot_color <- temp_color
+  }
+  
+  return(df)
+} 
+```
+
+
+```{r}
+allg_data_pos_mdoors$plot_color <- ''
+for (i_roi in unique(allg_data_pos_mdoors$roi)) {
+  temp_sig <- adole_data_pos_mdoors.t_tests[adole_data_pos_mdoors.t_tests$roi == i_roi,'Sig_adjust']
+  if (temp_sig == "") {
+    temp_color <- 'adole_not'
+  } else {
+    temp_color <- 'adole_sig'
+  }
+  allg_data_pos_mdoors[allg_data_pos_mdoors$group == 'kid' & allg_data_pos_mdoors$roi == i_roi,]$plot_color <- temp_color
+  
+  temp_sig <- adult_data_pos_mdoors.t_tests[adult_data_pos_mdoors.t_tests$roi == i_roi,'Sig_adjust']
+  if (temp_sig == "") {
+    temp_color <- 'adult_not'
+  } else {
+    temp_color <- 'adult_sig'
+  }
+  allg_data_pos_mdoors[allg_data_pos_mdoors$group == 'college' & allg_data_pos_mdoors$roi == i_roi,]$plot_color <- temp_color
+}
+```
+
+
+```{r}
+allg_data_pos_mdoors.t_tests <- mass_twos_t_tests(allg_data_pos_mdoors)
+
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
+
+# Plot
+p <- ggbarplot(allg_data_pos_mdoors, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_pos_mdoors.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
+  xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_mdoors.png')
+```
+
+
+
+
+### Social Task
+
+```{r}
+# Filter data
+allg_data_pos_social <- allg_data_pos[allg_data_pos$task %in% 'social', ]
+```
+
+```{r}
+# Conduct ANOVA
+model_allg_pos_social <- lmer(contrast_mean ~ 0 + roi*group + (1 | subject_id),
+                           data = allg_data_pos_social, REML=FALSE)
+coef(summary(model_allg_pos_social))
+```
+
+
+
+```{r}
+allg_data_pos_social.t_tests <- mass_twos_t_tests(allg_data_pos_social)
+
+allg_data_pos_social <- bar_fill_one_sample(allg_data_pos_social, 
+                                            adole_data_pos_social.t_tests,
+                                            adult_data_pos_social.t_tests)
+
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
+
+# Plot
+p <- ggbarplot(allg_data_pos_social, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_pos_social.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
+  xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+ggsave('../univariate_roi/allp_pos_winVlos_anova_bar_social.png')
+```
+
+
+
+
+
+# All Wins vs Loses
+
+## Young Adults
+```{r}
+# Filter data
+adult_data <- all_sub_roi_con[all_sub_roi_con$group %in% 'college', ]
+adult_data_all <- adult_data[adult_data$contrast %in% 'all_winVlos', ]
+adult_data_all <- adult_data_all[adult_data_all$roi %in% hyp_rois, ]
+
+adult_data_all_mdoors <- adult_data_all[adult_data_all$task %in% 'mdoors', ]
+adult_data_all_social <- adult_data_all[adult_data_all$task %in% 'social', ]
+```
+
+
+### Monetary Task
+```{r}
+# Conduct t-tests
+adult_data_all_mdoors.t_tests <- mass_t_tests(adult_data_all_mdoors)
+
+
+# Plot
+p <- ggbarplot(adult_data_all_mdoors, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se',
+               position = position_dodge(0.8))
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = adult_data_all_mdoors.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  xlab("Regions of Interests") + ylab("Mean Response (all wins > losses)") + 
+  scale_x_discrete(labels=hyp_rois_names)
+
+ggsave('../univariate_roi/adult_all_winVlos_ttest_bar_mdoors.png')
+```
+
+### Social Task
+
+```{r}
+# T-test
+adult_data_all_social.t_tests <- mass_t_tests(adult_data_all_social)
+
+
+# Plot
+p <- ggbarplot(adult_data_all_social, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se',
+               position = position_dodge(0.8))
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = adult_data_all_social.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  xlab("Regions of Interests") + ylab("Mean Response (all wins > losses)") + 
+  scale_x_discrete(labels=hyp_rois_names)
+
+ggsave('../univariate_roi/adult_all_winVlos_ttest_bar_social.png')
+```
+
+
+## Adolescents
+```{r}
+# Filter data
+adole_data <- all_sub_roi_con[all_sub_roi_con$group %in% 'kid', ]
+adole_data_all <- adole_data[adole_data$contrast %in% 'all_winVlos', ]
+adole_data_all <- adole_data_all[adole_data_all$roi %in% hyp_rois, ]
+
+adole_data_all_mdoors <- adole_data_all[adole_data_all$task %in% 'mdoors', ]
+adole_data_all_social <- adole_data_all[adole_data_all$task %in% 'social', ]
+
+```
+
+
+### Monetary Task
+```{r}
+# T-test
+adole_data_all_mdoors.t_tests <- mass_t_tests(adole_data_all_mdoors)
+
+
+# Plot
+p <- ggbarplot(adole_data_all_mdoors, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se',
+               position = position_dodge(0.8))
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = adole_data_all_mdoors.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  xlab("Regions of Interests") + ylab("Mean Response (all wins > losses)") + 
+  scale_x_discrete(labels=hyp_rois_names)
+
+ggsave('../univariate_roi/adole_all_winVlos_ttest_bar_mdoors.png')
+```
+
+
+### Social Task
+```{r}
+# T-test
+adole_data_all_social.t_tests <- mass_t_tests(adole_data_all_social)
+
+
+# Plot
+p <- ggbarplot(adole_data_all_social, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se',
+               position = position_dodge(0.8))
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = adole_data_all_social.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  xlab("Regions of Interests") + ylab("Mean Response (all wins > losses)") + 
+  scale_x_discrete(labels=hyp_rois_names)
+
+ggsave('../univariate_roi/adole_all_winVlos_ttest_bar_social.png')
+```
+
+## Group Differences
+
+```{r}
+# Filter data
+allg_data_all <- all_sub_roi_con[all_sub_roi_con$contrast %in% 'all_winVlos', ]
+allg_data_all <- allg_data_all[allg_data_all$roi %in% hyp_rois, ]
+```
+
+### Monetary Task
+
+```{r}
+allg_data_all_mdoors <- allg_data_all[allg_data_all$task %in% 'mdoors', ]
+```
+
+```{r}
+# ANOVA
+model_allg_all_mdoors <- lmer(contrast_mean ~ group*roi + (1 | subject_id),
+                           data = allg_data_all_mdoors)
+report(model_allg_all_mdoors)
+```
+
+
+```{r}
+allg_data_all_mdoors.t_tests <- mass_twos_t_tests(allg_data_all_mdoors)
+
+allg_data_all_mdoors <- bar_fill_one_sample(allg_data_all_mdoors, 
+                                            adole_data_all_mdoors.t_tests,
+                                            adult_data_all_mdoors.t_tests)
+
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
+
+# Plot
+p <- ggbarplot(allg_data_all_mdoors, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_all_mdoors.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
+  xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+ggsave('../univariate_roi/allp_all_winVlos_anova_bar_mdoors.png')
+```
+
+
+### Social Task
+
+```{r}
+# Filter data
+allg_data_all_social <- allg_data_all[allg_data_all$task %in% 'social', ]
+```
+
+```{r}
+# ANOVA
+model_allg_all_social <- anova_test(dv=contrast_mean, between=group, within=roi, wid=subject_id,
+                           data = allg_data_all_social)
+model_allg_all_social
+```
+
+
+```{r}
+allg_data_all_social.t_tests <- mass_twos_t_tests(allg_data_all_social)
+
+allg_data_all_social <- bar_fill_one_sample(allg_data_all_social, 
+                                            adole_data_all_social.t_tests,
+                                            adult_data_all_social.t_tests)
+
+fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
+outline.colors <- c("#D55E00", "#0072B2")
+
+# Plot
+p <- ggbarplot(allg_data_all_social, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_all_social.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
+  xlab("Regions of Interests") + ylab("Mean Response (positive wins > losses)") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+ggsave('../univariate_roi/allp_all_winVlos_anova_bar_social.png')
+```
+
+
+# Combined Plots
+```{r, fig.height=8, fig.width=8}
+# Plot
+p1 <- ggbarplot(allg_data_pos_mdoors, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color') + 
+  geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_pos_mdoors.t_tests) + 
+  #theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(),
+        plot.title = element_text(face='bold')) + 
+  #xlab("\n") + 
+  ylab("Mean Response") + 
+  ggtitle('A. Positive Wins > Positive Losses Contrast') + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+
+p2 <- ggbarplot(allg_data_all_mdoors, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color') +
+  geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_all_mdoors.t_tests) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5), legend.position='right',
+        plot.title = element_text(face='bold')) + 
+  xlab("Regions of Interests") + ylab("Mean Response") + 
+  ggtitle('B. All Wins > All Losses Contrast') + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+
+multi_plot <- ggarrange(p1, p2, nrow = 2, common.legend = TRUE, legend = 'right',
+          heights = c(5,6.75), align = 'v') 
+
+annotate_figure(multi_plot, top = text_grob("ROI Responses for Monetary Task\n", 
+               face = "bold", size = 18))
+
+
+ggsave('../univariate_roi/allp_anova_bar_mdoors.png')
+```
+
+
+```{r, fig.height=8, fig.width=8}
+# Plot
+p1 <- ggbarplot(allg_data_pos_social, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color') + 
+  geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_pos_social.t_tests) + 
+  #theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(),
+        plot.title = element_text(face='bold')) + 
+  #xlab("\n") + 
+  ylab("Mean Response") + 
+  ggtitle('A. Positive Wins > Positive Losses Contrast') + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+
+p2 <- ggbarplot(allg_data_all_social, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
+               group = 'group', color='group', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color') +
+  geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_all_social.t_tests) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5), legend.position='right',
+        plot.title = element_text(face='bold')) + 
+  xlab("Regions of Interests") + ylab("Mean Response") + 
+  ggtitle('B. All Wins > All Losses Contrast') + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Group', values = outline.colors, 
+                      labels=c("Young Adult", "Adolescent")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+
+multi_plot <- ggarrange(p1, p2, nrow = 2, common.legend = TRUE, legend = 'right',
+          heights = c(5,6.75), align = 'v') 
+
+annotate_figure(multi_plot, top = text_grob("ROI Responses for Social Task\n", 
+               face = "bold", size = 18))
+
+
+ggsave('../univariate_roi/allp_anova_bar_social.png')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Stats Table
+Create a stats table to summarize all univariate ROI analyses
+
+## Combine one-sample t-test data
+```{r}
+adult_data_pos_mdoors.t_tests$group <- 'adult'
+adult_data_pos_mdoors.t_tests$task <- 'mdoors'
+adult_data_pos_mdoors.t_tests$contrast <- 'positive'
+
+adult_data_pos_social.t_tests$group <- 'adult'
+adult_data_pos_social.t_tests$task <- 'social'
+adult_data_pos_social.t_tests$contrast <- 'positive'
+
+adult_data_all_mdoors.t_tests$group <- 'adult'
+adult_data_all_mdoors.t_tests$task <- 'mdoors'
+adult_data_all_mdoors.t_tests$contrast <- 'all'
+
+adult_data_all_social.t_tests$group <- 'adult'
+adult_data_all_social.t_tests$task <- 'social'
+adult_data_all_social.t_tests$contrast <- 'all'
+
+
+adole_data_pos_mdoors.t_tests$group <- 'adolescent'
+adole_data_pos_mdoors.t_tests$task <- 'mdoors'
+adole_data_pos_mdoors.t_tests$contrast <- 'positive'
+
+adole_data_pos_social.t_tests$group <- 'adolescent'
+adole_data_pos_social.t_tests$task <- 'social'
+adole_data_pos_social.t_tests$contrast <- 'positive'
+
+adole_data_all_mdoors.t_tests$group <- 'adolescent'
+adole_data_all_mdoors.t_tests$task <- 'mdoors'
+adole_data_all_mdoors.t_tests$contrast <- 'all'
+
+adole_data_all_social.t_tests$group <- 'adolescent'
+adole_data_all_social.t_tests$task <- 'social'
+adole_data_all_social.t_tests$contrast <- 'all'
+
+
+combined_ttests <- rbind(#adult_data_pos_mdoors.t_tests,
+                         #adult_data_pos_social.t_tests,
+                         adult_data_all_mdoors.t_tests,
+                         adult_data_all_social.t_tests,
+                         #adole_data_pos_mdoors.t_tests,
+                         #adole_data_pos_social.t_tests, 
+                         adole_data_all_mdoors.t_tests,
+                         adole_data_all_social.t_tests)
+
+```
+
+Fix up dataframe for pretty table
+```{r}
+# Sort dataframe
+one_sample_table <- combined_ttests[order(combined_ttests$group, 
+                                          combined_ttests$task, 
+                                          combined_ttests$roi), ]
+
+# Rename ROI names
+rep_str = c('TPJ_b-social'='TPJ', 'ATL_b-social'='ATL', 'AMG_r-social'='AMG',
+            'PCC_b-social'='PCC', 'dmPFC_b-social'='dmPFC', 
+            'vmPFC_b-reward'='vmPFC', 'region01'='CB Region 1',
+            'region02'='CB Region 2', 'region05'='CB Region 5', 
+            'region06'='CB Region 6', 'region07'='CB Region 7', 
+            'region08'='CB Region 8', 'region09'='CB Region 9',
+            'region10'='CB Region 10', 
+            'striatum_dorsalp'='Posterior Dorsal Striatum', 
+            'striatum_dorsala'='Posterior Anterior Striatum', 
+            'striatum_ventral'='Ventral Striatum')
+one_sample_table$roi <- str_replace_all(one_sample_table$roi, rep_str)
+
+# Turn columns numeric
+one_sample_table$Statistic <- as.numeric(one_sample_table$Statistic)
+one_sample_table$Estimate <- as.numeric(one_sample_table$Estimate)
+one_sample_table$CI_l <- as.numeric(one_sample_table$CI_l)
+one_sample_table$CI_u <- as.numeric(one_sample_table$CI_u)
+one_sample_table$P_adjust <- as.numeric(one_sample_table$P_adjust)
+
+# Round numbers
+one_sample_table$Statistic <- round(one_sample_table$Statistic,2)
+one_sample_table$Estimate <- round(one_sample_table$Estimate,2)
+one_sample_table$CI_l <- round(one_sample_table$CI_l,2)
+one_sample_table$CI_u <- round(one_sample_table$CI_u,2)
+one_sample_table$P_adjust <- round(one_sample_table$P_adjust,3)
+
+# Combine confidence inverval ranges
+one_sample_table$CI <- paste('[', as.character(one_sample_table$CI_l),
+                              ', ', as.character(one_sample_table$CI_u), ']')
+
+# Reorder columns
+one_sample_table <- one_sample_table[, c('group', 'task', "roi", "Estimate", 
+                                         "df", "Statistic",
+                                           "P_adjust", "CI")]
+
+colnames(one_sample_table) <- c('Group', 'Task', 'ROI','Mean','df','t-statistic','p','CI')
+
+```
+
+```{r}
+one_sample_table %>%
+  kbl(caption = "RSA results for a full and partial similarity analysis") %>%
+  kable_classic(full_width = F, html_font = "Times New Roman") %>%
+  save_kable("mass_one_sample_ttests.html")
+
+
+one_sample_table %>%
+  kbl(caption = "RSA results for a full and partial similarity analysis") %>%
+  kable_classic(full_width = F, html_font = "Times New Roman")
+```
+
+
+
+
+
+
+***
+# Supplementary Analyses
+
+## Group x Task x ROI Analysis
+
+### Positive Wins vs Losses
+```{r}
+# Filter data
+allg_data_pos <- all_sub_roi_con[all_sub_roi_con$contrast %in% 'positive_winVlos', ]
+allg_data_pos <- allg_data_pos[allg_data_pos$roi %in% hyp_rois, ]
+
+```
+
+
+```{r}
+# ANOVA
+model_allg_pos <- aov(contrast_mean ~ group*task*roi,
+                           data = allg_data_pos)
+summary(model_allg_pos)
+```
+
+```{r}
+# Plot
+p <- ggplot(data = allg_data_pos, aes(x=roi, y=contrast_mean, fill=task, alpha=group))
+p + geom_bar(stat = 'summary', fun = 'mean', position=position_dodge()) +
+  scale_alpha_manual(values = c(0.3, 1)) + 
+  theme_classic() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+ggsave('../univariate_roi/allp_pos_winVlos_anova_bar.png')
+```
+
+
+### All Wins vs Losses
+```{r}
+# Filter
+allg_data_all <- all_sub_roi_con[all_sub_roi_con$contrast %in% 'all_winVlos', ]
+allg_data_all <- allg_data_all[allg_data_all$roi %in% hyp_rois, ]
+
+```
+
+
+```{r}
+# ANOVA
+model_allg_all <- aov(contrast_mean ~ group*task*roi,
+                           data = allg_data_all)
+summary(model_allg_all)
+```
+
+```{r}
+p <- ggplot(data = allg_data_all, aes(x=roi, y=contrast_mean, fill=task, alpha=group))
+p + geom_bar(stat = 'summary', fun = 'mean', position=position_dodge()) +
+  scale_alpha_manual(values = c(0.3, 1)) + 
+  theme_classic() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+ggsave('../univariate_roi/allp_all_winVlos_anova_bar.png')
+```
+
+
+
+
+
+
+
+
