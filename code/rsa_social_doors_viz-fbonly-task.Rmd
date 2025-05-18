@@ -44,6 +44,7 @@ library(kableExtra)
 library(grid)
 library(pBrackets)
 library(WebPower)
+library(report)
 ```
 
 ## Experiment Parameters
@@ -87,7 +88,7 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2",
 
 
 # Power Analysis
-Group X ROI
+Task X ROI
 ```{r}
 n_groups = 2 * 3
 
@@ -132,23 +133,99 @@ Filter data by hypothesized ROIs
 ```{r}
 #hyp_rois <- c('striatum_ventral','striatum_dorsalp','region08','region02','TPJ_b-social')
 
-all_sim_vcr_mdoors_rois <- all_sim_vcr_mdoors[all_sim_vcr_mdoors$roi %in% hyp_rois, ]
-all_sim_vcr_social_rois <- all_sim_vcr_social[all_sim_vcr_social$roi %in% hyp_rois, ]
-#all_sim_vcr_social_rois$roi <- factor(all_sim_vcr_social_rois$roi, levels=hyp_rois)
+all_sim_vcr_rois <- all_sim_vcr[all_sim_vcr$roi %in% hyp_rois, ]
+all_sim_vcr_mdoors_rois <- all_sim_vcr[all_sim_vcr$roi %in% hyp_rois, ]
+all_sim_vcr_social_rois <- all_sim_vcr[all_sim_vcr$roi %in% hyp_rois, ]
+
 
 ```
 
 
 Fischer r to z transform (this is not used)
 ```{r}
+all_sim_vcr_rois$z <- fisherz(all_sim_vcr_rois$r)
 all_sim_vcr_mdoors_rois$z <- fisherz(all_sim_vcr_mdoors_rois$r)
 all_sim_vcr_social_rois$z <- fisherz(all_sim_vcr_social_rois$r)
-
 ```
 
 
 
 ## Conduct One Sample T-Tests
+```{r}
+# One sample t-test
+mass_t_tests <- function(df) {
+  # Conduct one-sample t-tests to examine if ROI contrast is greater than 0
+  df.t_tests = df %>%
+               group_by(roi) %>%
+               summarise(Statistic = t.test(z, mu = 0)$statistic,
+                         P = t.test(z, mu = 0)$p.value,
+                         Sig = ifelse(P < 0.05, "*", ""),
+                         df = t.test(z, mu = 0)$parameter,
+                         Estimate = t.test(z, mu = 0)$estimate,
+                         CI_l = t.test(z, mu = 0)$conf.int[1],
+                         CI_u = t.test(z, mu = 0)$conf.int[2],
+                         MaxWidth = max(z))
+  
+  # Conduct multiple comparisons correction
+  stats <- p.adjust(df.t_tests$P,method='fdr')
+  P_adjust <- stats
+  Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+                                               ifelse(P_adjust < 0.05, "*", "")))
+  df.t_tests$P_adjust <- P_adjust
+  df.t_tests$Sig_adjust <- Sig_adjust
+  
+  return(df.t_tests)
+}
+
+
+# Two sample t-test
+mass_twos_t_tests <- function(df) {
+  # Conduct one-sample t-tests to examine if ROI contrast is greater than 0
+  df.t_tests <- data.frame(roi = character(),
+                           Statistic = numeric(),
+                           P = numeric(),
+                           Sig = character(),
+                           df = numeric(),
+                           Estimate = numeric(),
+                           CI_l = numeric(),
+                           CI_u = numeric(),
+                           MaxWidth = numeric(),
+                           P_adjust = numeric(),
+                           Sig_adjust = character())
+
+
+  for (n in 1:length(hyp_rois)) {
+    temp_df <- df[df$roi == hyp_rois[n],]
+    group1 <- temp_df[temp_df$task == 'mdoors',]$z
+    group2 <- temp_df[temp_df$task == 'social',]$z
+    temp_ttest <- t.test(group1, group2)
+    
+    df.t_tests[n,]$roi <- hyp_rois[n]
+    df.t_tests[n,]$Statistic <- temp_ttest$statistic
+    df.t_tests[n,]$P <- temp_ttest$p.value
+    df.t_tests[n,]$Sig <- ifelse(df.t_tests[n,]$P < 0.05, "*", "")
+    df.t_tests[n,]$df <- temp_ttest$parameter
+    df.t_tests[n,]$Estimate <- abs(temp_ttest$estimate[1] - temp_ttest$estimate[2])
+    df.t_tests[n,]$CI_l <- temp_ttest$conf.int[1]
+    df.t_tests[n,]$CI_u <- temp_ttest$conf.int[2]
+    df.t_tests[n,]$MaxWidth <- max(temp_df$contrast_mean)
+  }
+    
+  # Conduct multiple comparisons correction
+  stats <- p.adjust(df.t_tests$P, method='fdr')
+  P_adjust <- stats
+  Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
+                                               ifelse(P_adjust < 0.05, "*", "")))
+  df.t_tests$P_adjust <- P_adjust
+  df.t_tests$Sig_adjust <- Sig_adjust
+  
+  return(df.t_tests)
+}
+
+```
+
+
+
 These t-tests will examine whether each ROI had significantly greater similarity than 0
 ```{r}
 
@@ -193,20 +270,27 @@ all_sim_vcr_social_rois.ttests$p_adjust <- p.adjust(all_sim_vcr_social_rois.ttes
 
 ```
 
+```{r}
+# Conduct one-sample t-tests to examine if ROI contrast is greater than 0
+all_sim_vcr_mdoors_rois.t_tests <- mass_t_tests(all_sim_vcr_mdoors_rois)
+all_sim_vcr_social_rois.t_tests <- mass_t_tests(all_sim_vcr_social_rois)
+```
 
-## Monetary
+
+
+
 
 ### ANOVA
 ```{r}
-anova_mod_sim_vcr <- aov(r ~ roi*group, data=all_sim_vcr_mdoors_rois)
+anova_mod_sim_vcr <- aov(r ~ roi*task, data=all_sim_vcr_rois)
 report(anova_mod_sim_vcr)
 ```
 
 
 
 ```{r}
-x <- all_sim_vcr_mdoors_rois$r
-factor <- all_sim_vcr_mdoors_rois$roi
+x <- all_sim_vcr_rois$z
+factor <- all_sim_vcr_rois$roi
 
 mean.sd <- function(x) c(mean = mean(x), sd = sd(x))
 simplify2array(tapply(x, factor, mean.sd))
@@ -221,7 +305,7 @@ tukey.test
 
 ```{r eval = FALSE, echo = FALSE}
 all_sim_vcr_social_rois.two_ttests <- compare_means(r ~ roi, 
-                                                    data = all_sim_vcr_mdoors_rois, 
+                                                    data = all_sim_vcr_rois, 
                                                     method = "t.test",
                                                     p.adjust.method = 'fdr')
 all_sim_vcr_social_rois.two_ttests
@@ -229,119 +313,6 @@ all_sim_vcr_social_rois.two_ttests
 
 
 ### Visualization
-Specify ROI plotting order on the x-axis
-```{r}
-roi_plot_order <- c('region08', 'region02', 'striatum_ventral')
-
-roi_plot_label <- c('CB Region 8','CB Region 2', 'Ventral Striatum')
-```
-
-```{r}
-# Rearrange x-axis labels
-all_sim_vcr_mdoors_rois$roi <- factor(all_sim_vcr_mdoors_rois$roi, 
-                                      levels=roi_plot_order)
-
-# Specify significance signs
-Sig_adjust = ifelse(all_sim_vcr_mdoors_rois.ttests$p_adjust < 0.005, "***", 
-                    ifelse(all_sim_vcr_mdoors_rois.ttests$p_adjust < 0.01, "**", 
-                    ifelse(all_sim_vcr_mdoors_rois.ttests$p_adjust < 0.05, "*", "")))
-all_sim_vcr_mdoors_rois.ttests$Sig_adjust <- Sig_adjust
-
-
-p <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi', 
-               y = 'r', add = 'mean_se',
-               fill=cbPalette[4], ylim=c(0,0.22),
-               position = position_dodge(0.8))
-p + theme(axis.text.x = element_text(vjust = 0.5)) + 
-  geom_signif(comparisons = list(c('region08', 'striatum_ventral'),
-                                 c('region02', 'striatum_ventral')),
-              map_signif_level = TRUE,
-              annotations = c('***','**'), y_position = c(0.11,0.09),
-                            tip_length = 0, textsize = 6,
-                            vjust=0.3) + 
-  geom_text(aes(label = Sig_adjust, y = 0.09), size = 6,
-              data = all_sim_vcr_mdoors_rois.ttests) + 
-  scale_x_discrete(labels=roi_plot_label) + 
-  xlab("Regions of Interests") + ylab("Spearman's rho") + 
-  ggtitle("Positive and Negative Win Similarity in Monetary Task")
-
-#ggsave('rsa_vcr_mdoors.png')
-
-```
-
-
-```{r}
-# One sample t-test
-mass_t_tests <- function(df) {
-  # Conduct one-sample t-tests to examine if ROI contrast is greater than 0
-  df.t_tests = df %>%
-               group_by(roi) %>%
-               summarise(Statistic = t.test(r, mu = 0)$statistic,
-                         P = t.test(r, mu = 0)$p.value,
-                         Sig = ifelse(P < 0.05, "*", ""),
-                         df = t.test(r, mu = 0)$parameter,
-                         Estimate = t.test(r, mu = 0)$estimate,
-                         CI_l = t.test(r, mu = 0)$conf.int[1],
-                         CI_u = t.test(r, mu = 0)$conf.int[2],
-                         MaxWidth = max(r))
-  
-  # Conduct multiple comparisons correction
-  stats <- p.adjust(df.t_tests$P,method='fdr')
-  P_adjust <- stats
-  Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                               ifelse(P_adjust < 0.05, "*", "")))
-  df.t_tests$P_adjust <- P_adjust
-  df.t_tests$Sig_adjust <- Sig_adjust
-  
-  return(df.t_tests)
-}
-
-
-# Two sample t-test
-mass_twos_t_tests <- function(df) {
-  # Conduct one-sample t-tests to examine if ROI contrast is greater than 0
-  df.t_tests <- data.frame(roi = character(),
-                           Statistic = numeric(),
-                           P = numeric(),
-                           Sig = character(),
-                           df = numeric(),
-                           Estimate = numeric(),
-                           CI_l = numeric(),
-                           CI_u = numeric(),
-                           MaxWidth = numeric(),
-                           P_adjust = numeric(),
-                           Sig_adjust = character())
-
-
-  for (n in 1:length(hyp_rois)) {
-    temp_df <- df[df$roi == hyp_rois[n],]
-    group1 <- temp_df[temp_df$group == 'kid',]$r
-    group2 <- temp_df[temp_df$group == 'adult',]$r
-    temp_ttest <- t.test(group1, group2)
-
-    df.t_tests[n,]$roi <- hyp_rois[n]
-    df.t_tests[n,]$Statistic <- temp_ttest$statistic
-    df.t_tests[n,]$P <- temp_ttest$p.value
-    df.t_tests[n,]$Sig <- ifelse(df.t_tests[n,]$P < 0.05, "*", "")
-    df.t_tests[n,]$df <- temp_ttest$parameter
-    df.t_tests[n,]$Estimate <- abs(temp_ttest$estimate[1] - temp_ttest$estimate[2])
-    df.t_tests[n,]$CI_l <- temp_ttest$conf.int[1]
-    df.t_tests[n,]$CI_u <- temp_ttest$conf.int[2]
-    df.t_tests[n,]$MaxWidth <- max(temp_df$r)
-  }
-    
-  # Conduct multiple comparisons correction
-  stats <- p.adjust(df.t_tests$P, method='fdr')
-  P_adjust <- stats
-  Sig_adjust = ifelse(P_adjust < 0.005, "***", ifelse(P_adjust < 0.01, "**", 
-                                               ifelse(P_adjust < 0.05, "*", "")))
-  df.t_tests$P_adjust <- P_adjust
-  df.t_tests$Sig_adjust <- Sig_adjust
-  
-  return(df.t_tests)
-}
-```
-
 
 ```{r}
 bar_fill_one_sample <- function(df, g1.t_tests, g2.t_tests) {
@@ -349,19 +320,19 @@ bar_fill_one_sample <- function(df, g1.t_tests, g2.t_tests) {
   for (i_roi in unique(df$roi)) {
     temp_sig <- g1.t_tests[g1.t_tests$roi == i_roi,'Sig_adjust']
     if (temp_sig == "") {
-      temp_color <- 'adole_not'
+      temp_color <- 'mdoors_not'
     } else {
-      temp_color <- 'adole_sig'
+      temp_color <- 'mdoors_sig'
     }
-    df[df$group == 'kid' & df$roi == i_roi,]$plot_color <- temp_color
+    df[df$task == 'mdoors' & df$roi == i_roi,]$plot_color <- temp_color
     
     temp_sig <- g2.t_tests[g2.t_tests$roi == i_roi,'Sig_adjust']
     if (temp_sig == "") {
-      temp_color <- 'adult_not'
+      temp_color <- 'social_not'
     } else {
-      temp_color <- 'adult_sig'
+      temp_color <- 'social_sig'
     }
-    df[df$group == 'adult' & df$roi == i_roi,]$plot_color <- temp_color
+    df[df$task == 'social' & df$roi == i_roi,]$plot_color <- temp_color
   }
   
   return(df)
@@ -370,161 +341,45 @@ bar_fill_one_sample <- function(df, g1.t_tests, g2.t_tests) {
 
 
 ```{r}
-all_sim_vcr_mdoors_rois_adole <- all_sim_vcr_mdoors_rois[all_sim_vcr_mdoors_rois$group %in% 'kid', ]
-all_sim_vcr_mdoors_rois_adult <- all_sim_vcr_mdoors_rois[all_sim_vcr_mdoors_rois$group %in% 'adult', ]
-all_sim_vcr_mdoors_rois_adole.t_tests <- mass_t_tests(all_sim_vcr_mdoors_rois_adole)
-all_sim_vcr_mdoors_rois_adult.t_tests <- mass_t_tests(all_sim_vcr_mdoors_rois_adult)
-all_sim_vcr_mdoors_rois.t_tests <- mass_twos_t_tests(all_sim_vcr_mdoors_rois)
+# Rearrange x-axis labels
+all_sim_vcr_rois$roi <- factor(all_sim_vcr_rois$roi, 
+                                      levels=roi_plot_order)
 
-all_sim_vcr_mdoors_rois <- bar_fill_one_sample(all_sim_vcr_mdoors_rois, 
-                                            all_sim_vcr_mdoors_rois_adole.t_tests,
-                                            all_sim_vcr_mdoors_rois_adult.t_tests)
+all_sim_vcr_rois.t_tests <- mass_twos_t_tests(all_sim_vcr_rois)
 
-fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
-outline.colors <- c("#D55E00", "#0072B2")
+all_sim_vcr_rois <- bar_fill_one_sample(all_sim_vcr_rois, 
+                                            all_sim_vcr_mdoors_rois.t_tests,
+                                            all_sim_vcr_social_rois.t_tests)
+
+fill.colors <- c(mdoors_not = "#FFFFFF", mdoors_sig = "#7fb8d8", social_not ="#FFFFFF", social_sig = "#eaae7f")
+outline.colors <- c("#0072B2", "#D55E00")
 
 # Plot
-p <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi', 
-               y = 'r', add = 'mean_se', add.params = list(group = "group"),
-               group = 'group', color='group', position = position_dodge(0.8), 
+p <- ggbarplot(all_sim_vcr_rois, x = 'roi', 
+               y = 'z', add = 'mean_se', add.params = list(group = "task"),
+               group = 'task', color='task', position = position_dodge(0.8), 
                palette = outline.colors, fill = 'plot_color')
-p + geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
-              data = all_sim_vcr_mdoors_rois.t_tests) + 
+p + geom_text(aes(label = Sig_adjust, y = 0.17), size = 6,
+              data = all_sim_vcr_rois.t_tests) + 
   geom_signif(comparisons = list(c('region08', 'striatum_ventral'),
                                  c('region02', 'striatum_ventral')),
               map_signif_level = TRUE,
-              annotations = c('***','**'), y_position = c(0.11,0.09),
+              annotations = c('***','***'), y_position = c(0.20,0.18),
                             tip_length = 0, textsize = 6,
-                            vjust=0.3) + 
-  theme(axis.text.x = element_text(vjust = 0.5), legend.position='right') + 
-  xlab("Regions of Interests") + ylab("Spearman's Rho") + 
-  ggtitle("Positive and Negative Win Similarity in Monetary Task") + 
+                            vjust=0.5) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
+  xlab("Regions of Interests") + ylab("Positive and Negative Win Similarity") + 
   scale_x_discrete(labels=hyp_rois_names) + 
   scale_fill_manual(values=fill.colors) + 
   guides(fill = FALSE) + 
-  scale_colour_manual(name = 'Group', values = outline.colors, 
-                      labels=c("Young Adult", "Adolescent")) + 
+  scale_colour_manual(name = 'Task', values = outline.colors, 
+                      labels=c("Monetary", "Social")) + 
   guides(color = guide_legend(override.aes = list(fill = outline.colors)))
 
-ggsave('rsa_vcr_mdoors.png')
+#ggsave('../univariate_roi/allg_pos_winVlos_anova_bar.png')
 ```
 
 
-
-
-
-## Social
-
-### ANOVA
-```{r}
-anova_mod_sim_vcr <- aov(r ~ roi*group, data=all_sim_vcr_social_rois)
-report(anova_mod_sim_vcr)
-```
-
-```{r}
-x <- all_sim_vcr_social_rois$r
-factor <- all_sim_vcr_social_rois$roi
-
-mean.sd <- function(x) c(mean = mean(x), sd = sd(x))
-simplify2array(tapply(x, factor, mean.sd))
-```
-
-```{r}
-tapply(x, factor, sd)
-```
-
-
-### Post-hoc Tests
-```{r}
-tukey.test <- TukeyHSD(anova_mod_sim_vcr)
-tukey.test
-```
-
-```{r}
-stats <- compare_means(r ~ roi, , data = all_sim_vcr_social_rois, method = "t.test",
-                       p.adjust.method = 'fdr')
-stats
-```
-
-
-
-### Visualization
-
-```{r}
-
-# Rearrange x-axis labels
-all_sim_vcr_social_rois$roi <- factor(all_sim_vcr_social_rois$roi, 
-                                      levels=roi_plot_order)
-
-# Specify significance signs
-Sig_adjust = ifelse(all_sim_vcr_social_rois.ttests$p_adjust < 0.005, "***", 
-                    ifelse(all_sim_vcr_social_rois.ttests$p_adjust < 0.01, "**", 
-                    ifelse(all_sim_vcr_social_rois.ttests$p_adjust < 0.05, "*", "")))
-all_sim_vcr_social_rois.ttests$Sig_adjust <- Sig_adjust
-
-
-p <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
-               y = 'r', add = 'mean_se',
-               fill=cbPalette[5], ylim=c(0,0.22),
-               position = position_dodge(0.8))
-p + theme(axis.text.x = element_text(vjust = 0.5)) + 
-  geom_signif(comparisons = list(c('region08', 'region02'),
-                                 c('region08', 'striatum_ventral'),
-                                 c('region02', 'striatum_ventral')),
-              map_signif_level = TRUE,
-              annotations = c('*','***','***'), y_position = c(0.14,0.16,0.18),
-                            tip_length = 0, textsize = 6,
-                            vjust=0.3) + 
-  geom_text(aes(label = Sig_adjust, y = 0.14), size = 6,
-              data = all_sim_vcr_social_rois.ttests) + 
-  scale_x_discrete(labels=roi_plot_label) + 
-  xlab("Regions of Interests") + ylab("Spearman's rho") + 
-  ggtitle("Positive and Negative Win Similarity in Social Task")
-
-ggsave('rsa_vcr_social.png')
-
-```
-
-```{r}
-all_sim_vcr_social_rois_adole <- all_sim_vcr_social_rois[all_sim_vcr_social_rois$group %in% 'kid', ]
-all_sim_vcr_social_rois_adult <- all_sim_vcr_social_rois[all_sim_vcr_social_rois$group %in% 'adult', ]
-all_sim_vcr_social_rois_adole.t_tests <- mass_t_tests(all_sim_vcr_social_rois_adole)
-all_sim_vcr_social_rois_adult.t_tests <- mass_t_tests(all_sim_vcr_social_rois_adult)
-all_sim_vcr_social_rois.t_tests <- mass_twos_t_tests(all_sim_vcr_social_rois)
-
-all_sim_vcr_social_rois <- bar_fill_one_sample(all_sim_vcr_social_rois, 
-                                            all_sim_vcr_social_rois_adole.t_tests,
-                                            all_sim_vcr_social_rois_adult.t_tests)
-
-fill.colors <- c(adole_not = "#FFFFFF", adole_sig = "#7fb8d8", adult_not ="#FFFFFF", adult_sig = "#eaae7f")
-outline.colors <- c("#D55E00", "#0072B2")
-
-# Plot
-p <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
-               y = 'r', add = 'mean_se', add.params = list(group = "group"),
-               group = 'group', color='group', position = position_dodge(0.8), 
-               palette = outline.colors, fill = 'plot_color')
-p + geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
-              data = all_sim_vcr_social_rois.t_tests) + 
-  geom_signif(comparisons = list(c('region08', 'region02'),
-                                 c('region08', 'striatum_ventral'),
-                                 c('region02', 'striatum_ventral')),
-              map_signif_level = TRUE,
-              annotations = c('*','***','***'), y_position = c(0.14,0.16,0.18),
-                            tip_length = 0, textsize = 6,
-                            vjust=0.2) + 
-  theme(axis.text.x = element_text(vjust = 0.5), legend.position='right') + 
-  xlab("Regions of Interests") + ylab("Spearman's Rho") + 
-  ggtitle("Positive and Negative Win Similarity in Social Task") + 
-  scale_x_discrete(labels=hyp_rois_names) + 
-  scale_fill_manual(values=fill.colors) + 
-  guides(fill = FALSE) + 
-  scale_colour_manual(name = 'Group', values = outline.colors, 
-                      labels=c("Young Adult", "Adolescent")) + 
-  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
-
-ggsave('rsa_vcr_social.png')
-```
 
 
 
