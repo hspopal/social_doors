@@ -24,7 +24,7 @@ task = str(sys.argv[2])
 #task = 'social'
 
 
-bids_dir = '/data/projects/social_doors/'
+bids_dir = '/Volumes/HP-SOC-DOOR/social_doors/'
 os.chdir(bids_dir)
 
 all_runs_dir = bids_dir + 'derivatives/social_doors-nilearn/'
@@ -156,6 +156,16 @@ c_pos_winVlos[pos_los_idx] = -1
 contrasts['positive_winVlos'] = c_pos_winVlos
 
 
+# Trial negative wins versus loses
+c_neg_winVlos = np.zeros(n_conds)
+neg_win_idx = design_matrix.columns.to_list().index('negative_win')
+neg_los_idx = design_matrix.columns.to_list().index('negative_loss')
+c_neg_winVlos[neg_win_idx] = 1
+c_neg_winVlos[neg_los_idx] = -1
+
+contrasts['negative_winVlos'] = c_neg_winVlos
+
+
 # Trial all wins versus loses
 c_all_winVlos = np.zeros(n_conds)
 win_idx = [design_matrix.columns.get_loc(c) for c in design_matrix.columns if 'win' in c]
@@ -164,6 +174,16 @@ c_all_winVlos[win_idx] = 1
 c_all_winVlos[los_idx] = -1
 
 contrasts['all_winVlos'] = c_all_winVlos
+
+
+# Trial positive versus negative wins
+c_posVneg_win = np.zeros(n_conds)
+pos_win_idx = design_matrix.columns.to_list().index('positive_win')
+neg_win_idx = design_matrix.columns.to_list().index('negative_win')
+c_posVneg_win[pos_win_idx] = 1
+c_posVneg_win[neg_win_idx] = -1
+
+contrasts['posVneg_win'] = c_posVneg_win
 
 
 for n in range(len(contrasts)):
