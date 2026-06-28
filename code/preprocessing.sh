@@ -158,16 +158,6 @@ done
 
 # Run first level analyses
 for subj in "${subj_list[@]}"; do
-	python code/social_doors_1st_level.py ${subj} mdoors
-	python code/social_doors_1st_level.py ${subj} social
-done
-
-for subj in "${subj_list[@]}"; do
-	python code/social_doors_1st_level-indiv_runs.py ${subj} mdoors
-	python code/social_doors_1st_level-indiv_runs.py ${subj} social
-done
-
-for subj in "${subj_list[@]}"; do
 	python code/social_doors_1st_level-nilearn.py ${subj} mdoors
 	python code/social_doors_1st_level-nilearn.py ${subj} social
 done

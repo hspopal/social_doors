@@ -17,11 +17,18 @@ import pandas as pd
 import numpy as np
 
 
-subj = 'sub-'+str(sys.argv[1])
-task = str(sys.argv[2])
+beta_test = False
 
-#subj = 'sub-010'
-#task = 'social'
+if beta_test:
+    subj = 'sub-010'
+    task = 'mdoors'
+    
+    print('---BETA TESTING---')
+    
+else:
+    subj = 'sub-'+str(sys.argv[1])
+    task = str(sys.argv[2])
+
 
 
 bids_dir = '/Volumes/HP-SOC-DOOR/social_doors/'

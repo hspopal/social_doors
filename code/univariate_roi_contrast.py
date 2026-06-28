@@ -20,7 +20,7 @@ import pandas as pd
 #task = 'social'
 
 # Define paths
-bids_dir = '/data/projects/social_doors/'
+bids_dir = '/Volumes/HP-SOC-DOOR/social_doors/'
 os.chdir(bids_dir)
 
 data_dir = bids_dir + 'derivatives/social_doors-nilearn/'
@@ -86,7 +86,7 @@ roi_names = [x + '-reward' for x in reward_roi_names] + [x + '-social' for x in 
 
 # Use ROI to mask
 #roi_names = ['VS_L', 'VS_R']
-con_names = ['all_winVlos', 'positive_winVlos']
+con_names = ['all_winVlos', 'positive_winVlos', 'posVneg_win']
 #roi_dict['VS_l'] = bids_dir+'derivatives/rois/roi_bin_reward_VS_l.nii.gz'
 #roi_dict['VS_r'] = bids_dir+'derivatives/rois/roi_bin_reward_VS_r.nii.gz'
 
@@ -139,7 +139,7 @@ for subj in subjs_list:
             
                     
                     # Import beta map for condition
-                    fnc_data = data_dir+subj+'/zmap_'+task+'_'+cond+'.nii'
+                    fnc_data = data_dir+subj+'/zmap_'+task+'_'+cond+'.nii.gz'
                     roi_data = Brain_Data(fnc_data, mask=subj_t1)
                 
                 
@@ -152,12 +152,13 @@ for subj in subjs_list:
                     
                     
                     # Attach data to subject dataframe
-                    all_sub_roi_betas = all_sub_roi_betas.append({'subject_id':subj,
-                                                                  'group':group_id,
-                                                                  'task':task,
-                                                                  'contrast':cond
-,                                                                  'roi':roi_names[n],
-                                                                  'contrast_mean':fnc_masked.mean()},
+                    temp_df = pd.DataFrame.from_dict({'subject_id':[subj],
+                                            'group':[group_id],
+                                            'task':[task],
+                                            'contrast':[cond],
+                                           'roi':[roi_names[n]],
+                                            'contrast_mean':[fnc_masked.mean()]})
+                    all_sub_roi_betas = pd.concat([all_sub_roi_betas, temp_df],
                                                                   ignore_index=True)
                     
         
