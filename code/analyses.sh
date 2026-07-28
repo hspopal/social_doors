@@ -43,7 +43,27 @@ done
 
 
 
-# SUIT cerebellum toolbox
+# SUIT cerebellum analysis
+
+# Normalize cerebellum data to SUIT space
+for subj in "${subj_list[@]}"; do 
+    for task in mdoors social; do
+        for contrast in posVneg_win positive_winVlos negative_winVlos all_winVlos; do
+            python code/suit_normalization.py ${subj} ${task} ${contrast}
+        done
+    done
+done
+
+for subj in "${subj_list[@]}"; do 
+    for task in mdoors social; do
+        for contrast in negative_winVlos; do
+            python code/suit_normalization.py ${subj} ${task} ${contrast}
+        done
+    done
+done
+
+
+
 
 ## Create suit directory in subj folders and copy relevant files
 
