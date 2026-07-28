@@ -14,9 +14,12 @@ def plot_transparent_threshold(filename, thresh=1, mc='fdr', mc_alpha=0.05, clus
     # Find stat map
     stat_filename = os.path.join(filename+'_effect.nii.gz')
     stat_filename_mc = os.path.join(filename+'_zmap_'+mc+'-'+str(mc_alpha)+'.nii.gz')
+
+    stat_filename_suit = os.path.join(filename+'_effect_space-SUIT.nii.gz')
+    stat_filename_mc_suit = os.path.join(filename+'_zmap_'+mc+'-'+str(mc_alpha)+'_space-SUIT.nii.gz')
     
     # Import stat map as a cerebellum flatmap
-    funcdata = flatmap.vol_to_surf(stat_filename,
+    suit_data = flatmap.vol_to_surf(stat_filename_suit,
                                   space='SUIT')
     
     
@@ -50,7 +53,7 @@ def plot_transparent_threshold(filename, thresh=1, mc='fdr', mc_alpha=0.05, clus
         # Plot cerebellum flatmap
         ax_joint = plt.subplot(gs[2:, 0])
         ax_joint.set(title='Cerebellum flatmap')
-        flatmap.plot(data=funcdata, cmap='coolwarm',
+        flatmap.plot(data=suit_data, cmap='coolwarm',
                     threshold=[-thresh,thresh],
                     colorbar=False,
                     render='matplotlib', new_figure=False)
