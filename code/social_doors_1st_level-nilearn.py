@@ -21,7 +21,7 @@ beta_test = False
 
 if beta_test:
     subj = 'sub-010'
-    task = 'mdoors'
+    task = 'social'
     
     print('---BETA TESTING---')
     
@@ -84,6 +84,7 @@ fmri_glm = FirstLevelModel(mask_img=subj_t1,
                            slice_time_ref=0.5,
                            noise_model='ar1',
                            standardize=False,
+                           smoothing_fwhm=4,
                            hrf_model='spm',
                            drift_model='polynomial',
                            high_pass=0.01)
@@ -124,8 +125,8 @@ design_matrix = fmri_glm.design_matrices_[0]
 #plt.show()
 
 # Save the betas maps for relevant conditions
-relv_conds = ['positive','positive_win','positive_loss',
-              'negative','negative_win','negative_loss']
+relv_conds = ['positive_win','positive_loss',
+              'negative_win','negative_loss']
 
 n_conds = len(design_matrix.columns)
 

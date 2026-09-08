@@ -69,17 +69,9 @@ all_sub_roi_con
 
 ### Define hypothesis ROIs
 ```{r}
-hyp_rois <- c('TPJ_b-social','ATL_b-social','AMG_r-social','PCC_b-social','dmPFC_b-social',
-              'vmPFC_b-reward',
-              'region01','region02','region05','region06','region07',
-              'region08','region09','region10', 
-              'striatum_ventral','striatum_dorsala','striatum_dorsalp')
+hyp_rois <- c('region02','region08','striatum_ventral')
 
-hyp_rois_names <- c('TPJ','ATL','AMG (r)','PCC','dmPFC',
-                    'vmPFC',
-                    'CB Region 1','CB Region 2','CB Region 5',
-                    'CB Region 6','CB Region 7','CB Region 8','CB Region 9','CB Region 10',
-                    'Ventral Striatum','Anterior \n Dorsal Striatum','Posterior \n Dorsal Striatum')
+hyp_rois_names <- c('CB Region 2','CB Region 8','Ventral Striatum')
 
 # Turn ROI column into a factor for sorting during visualization
 all_sub_roi_con$roi <- factor(all_sub_roi_con$roi, levels=hyp_rois)

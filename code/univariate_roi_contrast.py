@@ -106,8 +106,10 @@ for subj in subjs_list:
     
     for task in ['mdoors','social']:
         # Find the subject brain mask
-        subj_t1 = bids_dir+"derivatives/fmriprep/"+subj+"/func/"+subj+"_task-"+task+"_run-1_space-MNI152NLin2009cAsym_desc-brain_mask.nii.gz"
-        subj_suit = bids_dir+'derivatives/social_doors/'+subj+'/suit/iw_c_'+subj+'_run-1_space-MNI152NLin2009cAsym_desc-preproc_T1w_pcereb_u_a_'+subj+'_run-1_space-MNI152NLin2009cAsym_label-GM_probseg.nii'
+        subj_mask = os.path.join(bids_dir, 'derivatives', 'fmriprep', subj, 
+                               'func', subj+'_task-'+task+'_run-1_space-MNI152NLin2009cAsym_desc-brain_mask.nii.gz')
+        subj_suit = os.path.join(bids_dir, 'derivatives', 'fmriprep', 
+                                 subj, 'anat', subj+'_run-1_space-MNI152NLin2009cAsym_desc-preproc_T1w_cerebellum_dseg.nii.gz')
 
         # Create dataframe to store mean responses for subject
         #subj_roi_data = pd.DataFrame(columns=roi_names)
@@ -126,13 +128,12 @@ for subj in subjs_list:
             
                     
                     # Import beta map for condition
-                    fnc_data = os.path.join(data_dir, subj, 'suit', 
-                               'iw_wdzmap_'+task+'_'+cond+'_u_a_'+subj+'_run-1_space-MNI152NLin2009cAsym_label-GM_probseg.nii')
+                    fnc_data = os.path.join(data_dir+subj+'/zmap_'+task+'_'+cond+'_space-SUIT.nii.gz')
                 
                     roi_data = Brain_Data(fnc_data, mask=subj_suit)
                     
                 else:
-                    roi_mask = Brain_Data(rois[n], mask=subj_t1)
+                    roi_mask = Brain_Data(rois[n], mask=subj_mask)
                     
                     # Binarize mask
                     roi_mask = roi_mask.threshold(upper=0.1, binarize=True)
@@ -140,7 +141,7 @@ for subj in subjs_list:
                     
                     # Import beta map for condition
                     fnc_data = data_dir+subj+'/zmap_'+task+'_'+cond+'.nii.gz'
-                    roi_data = Brain_Data(fnc_data, mask=subj_t1)
+                    roi_data = Brain_Data(fnc_data, mask=subj_mask)
                 
                 
                 # Mask beta map and get average value for ROI
