@@ -87,7 +87,8 @@ fmri_glm = FirstLevelModel(mask_img=subj_t1,
                            smoothing_fwhm=4,
                            hrf_model='spm',
                            drift_model='polynomial',
-                           high_pass=0.01)
+                           high_pass=0.01,
+                           reports=True)
 
 
 event_files = [f for f in glob.glob(bids_dir + '/Nifti/'+subj+'/func/'+subj+'_task-'+task+'*events.tsv', recursive=True)]
@@ -108,6 +109,11 @@ for n in range(len(func_runs)):
                      
     temp_event_file = pd.read_csv(event_files[n], sep='\t')
     temp_event_file = temp_event_file[temp_event_file["trial_type"].str.contains("fixation") == False]
+    
+    # Remove block level events from future design matrix
+    temp_event_file = temp_event_file[temp_event_file['trial_type'] != 'negative']
+    temp_event_file = temp_event_file[temp_event_file['trial_type'] != 'positive']
+    
     events.append(temp_event_file)
 
 
@@ -209,8 +215,11 @@ for n in range(len(contrasts)):
 #plotting.show()
 
 
-
-
+# Save first level report
+report = fmri_glm.generate_report(contrasts,
+                                  title = 'First Level Analysis for '+subj+' ' + task + 'Task')
+report.save_as_html(os.path.join(all_runs_dir,subj,
+                                 subj+'_task-'+task+'_report-1st_level.html'))
 
 
 

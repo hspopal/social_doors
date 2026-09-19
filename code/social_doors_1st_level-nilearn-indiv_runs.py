@@ -14,15 +14,21 @@ import pandas as pd
 import numpy as np
 
 
-subj = 'sub-'+str(sys.argv[1])
-task = str(sys.argv[2])
+beta_test = False
 
-# For beta testings
-#subj = 'sub-010'
-#task = 'social'
+if beta_test:
+    subj = 'sub-010'
+    task = 'social'
+    
+    print('---BETA TESTING---')
+    
+else:
+    subj = 'sub-'+str(sys.argv[1])
+    task = str(sys.argv[2])
 
 
-bids_dir = '/data/projects/social_doors/'
+
+bids_dir = '/Volumes/HP-SOC-DOOR/social_doors/'
 os.chdir(bids_dir)
 
 all_runs_dir = bids_dir + 'derivatives/social_doors-nilearn-indiv_runs/'
@@ -71,8 +77,8 @@ motion_reg_names = ['trans_x','trans_y','trans_z','rot_x','rot_y','rot_z']
 confounds = []
 events = []
 
-relv_conds = ['positive','positive_win','positive_loss',
-              'negative','negative_win','negative_loss']
+relv_conds = ['positive_win','positive_loss',
+              'negative_win','negative_loss']
 
 
 
@@ -88,6 +94,11 @@ for n in range(len(func_runs)):
                      
     temp_event_file = pd.read_csv(event_files[n], sep='\t')
     temp_event_file = temp_event_file[temp_event_file["trial_type"].str.contains("fixation") == False]
+
+    # Remove block level events from future design matrix
+    temp_event_file = temp_event_file[temp_event_file['trial_type'] != 'negative']
+    temp_event_file = temp_event_file[temp_event_file['trial_type'] != 'positive']
+
     events.append(temp_event_file)
     
     
