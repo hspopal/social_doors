@@ -557,6 +557,16 @@ allg_data_all <- allg_data_all[allg_data_all$roi %in% hyp_rois, ]
 allg_data_all_mdoors <- allg_data_all[allg_data_all$task %in% 'mdoors', ]
 ```
 
+
+```{r}
+library(rstatix)
+library(ggpubr)
+res.aov <- anova_test(data = allg_data_all_mdoors, dv = contrast_mean, 
+                      wid = subject_id, between = group, within = roi)
+res.aov
+```
+
+
 ```{r}
 # ANOVA
 model_allg_all_mdoors <- aov(contrast_mean ~ group*roi,
@@ -601,6 +611,14 @@ ggsave('../univariate_roi/allp_all_winVlos_anova_bar_mdoors.png')
 # Filter data
 allg_data_all_social <- allg_data_all[allg_data_all$task %in% 'social', ]
 ```
+
+
+```{r}
+res.aov <- anova_test(data = allg_data_all_social, dv = contrast_mean, 
+                      wid = subject_id, between = group, within = roi)
+res.aov
+```
+
 
 ```{r}
 # ANOVA
@@ -768,6 +786,13 @@ allg_data_win_mdoors <- allg_data_win[allg_data_win$task %in% 'mdoors', ]
 ```
 
 ```{r}
+res.aov <- anova_test(data = allg_data_win_mdoors, dv = contrast_mean, 
+                      wid = subject_id, between = group, within = roi)
+res.aov
+```
+
+
+```{r}
 # ANOVA
 model_allg_win_mdoors <- aov(contrast_mean ~ group*roi,
                            data = allg_data_win_mdoors)
@@ -824,6 +849,13 @@ report(model_allg_win_social)
 
 
 ```{r}
+res.aov <- anova_test(data = allg_data_win_social, dv = contrast_mean, 
+                      wid = subject_id, between = group, within = roi)
+res.aov
+```
+
+
+```{r}
 allg_data_win_social.t_tests <- mass_twos_t_tests(allg_data_win_social)
 
 allg_data_win_social <- bar_fill_one_sample(allg_data_win_social, 
@@ -864,7 +896,7 @@ ggsave('../univariate_roi/allp_posVneg_win_anova_bar_social.png')
 p1 <- ggbarplot(allg_data_pos_mdoors, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
                group = 'group', color='group', position = position_dodge(0.8), 
-               palette = outline.colors, fill = 'plot_color') + 
+               palette = outline.colors, fill = 'plot_color', ylim = c(-0.4,0.6)) + 
   geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
               data = allg_data_pos_mdoors.t_tests) + 
   #theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
@@ -881,16 +913,16 @@ p1 <- ggbarplot(allg_data_pos_mdoors, x = 'roi',
   guides(color = guide_legend(override.aes = list(fill = outline.colors)))
 
 
-p2 <- ggbarplot(allg_data_all_mdoors, x = 'roi', 
+p2 <- ggbarplot(allg_data_win_mdoors, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
                group = 'group', color='group', position = position_dodge(0.8), 
-               palette = outline.colors, fill = 'plot_color') +
+               palette = outline.colors, fill = 'plot_color', ylim = c(-0.4,0.6)) +
   geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
               data = allg_data_all_mdoors.t_tests) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5), legend.position='right',
         plot.title = element_text(face='bold')) + 
   xlab("Regions of Interests") + ylab("Mean Response") + 
-  ggtitle('B. All Wins > All Losses Contrast') + 
+  ggtitle('B. Positive Wins > Negative Wins Contrast') + 
   scale_x_discrete(labels=hyp_rois_names) + 
   scale_fill_manual(values=fill.colors) + 
   guides(fill = FALSE) + 
@@ -915,7 +947,7 @@ ggsave('../univariate_roi/allp_anova_bar_mdoors.png')
 p1 <- ggbarplot(allg_data_pos_social, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
                group = 'group', color='group', position = position_dodge(0.8), 
-               palette = outline.colors, fill = 'plot_color') + 
+               palette = outline.colors, fill = 'plot_color', ylim = c(-0.4,0.6)) + 
   geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
               data = allg_data_pos_social.t_tests) + 
   #theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
@@ -932,16 +964,16 @@ p1 <- ggbarplot(allg_data_pos_social, x = 'roi',
   guides(color = guide_legend(override.aes = list(fill = outline.colors)))
 
 
-p2 <- ggbarplot(allg_data_all_social, x = 'roi', 
+p2 <- ggbarplot(allg_data_win_social, x = 'roi', 
                y = 'contrast_mean', add = 'mean_se', add.params = list(group = "group"),
                group = 'group', color='group', position = position_dodge(0.8), 
-               palette = outline.colors, fill = 'plot_color') +
+               palette = outline.colors, fill = 'plot_color', ylim = c(-0.4,0.6)) +
   geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
               data = allg_data_all_social.t_tests) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5), legend.position='right',
         plot.title = element_text(face='bold')) + 
   xlab("Regions of Interests") + ylab("Mean Response") + 
-  ggtitle('B. All Wins > All Losses Contrast') + 
+  ggtitle('B. Positive Wins > Negative Wins Contrast') + 
   scale_x_discrete(labels=hyp_rois_names) + 
   scale_fill_manual(values=fill.colors) + 
   guides(fill = FALSE) + 

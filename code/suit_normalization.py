@@ -91,14 +91,14 @@ if not os.path.exists(subj_anat_prefix+'_cerebellum_dseg.nii.gz'):
 
 # Apply the reslice function
 print('Normalizing functional data...')
-src = bids_dir+'derivatives/social_doors-nilearn/'+subj+'/zmap_'+task+'_'+contrast+'.nii.gz'
+src = bids_dir+'derivatives/social_doors-nilearn-indiv_runs/'+subj+'/zmap_'+task+'_'+contrast+'.nii.gz'
 deform = subj_anat_prefix+'_to-SUIT_mode-image_xfm.nii.gz'
 mask = subj_anat_prefix+'_cerebellum_dseg.nii.gz'
 img = suit.reslice_image(source_image = src, deformation = deform, 
                          mask = mask, voxelsize=2)
 
 # Save the resliced image under a new filename
-nib.save(img, bids_dir+'derivatives/social_doors-nilearn/'+subj+'/zmap_'+task+'_'+contrast+'_space-SUIT.nii.gz')
+nib.save(img, bids_dir+'derivatives/social_doors-nilearn-indiv_runs/'+subj+'/zmap_'+task+'_'+contrast+'_space-SUIT.nii.gz')
 
 
 
