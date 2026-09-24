@@ -342,6 +342,7 @@ bar_fill_one_sample <- function(df, g1.t_tests, g2.t_tests) {
 
 ```{r}
 # Rearrange x-axis labels
+roi_plot_order <- c('region02','region08','striatum_ventral')
 all_sim_vcr_rois$roi <- factor(all_sim_vcr_rois$roi, 
                                       levels=roi_plot_order)
 

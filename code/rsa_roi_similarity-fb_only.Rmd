@@ -26,7 +26,7 @@ knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
 
 require("knitr")
-opts_knit$set(root.dir = "~/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/rsa-bw_runs-fb_only/")
+opts_knit$set(root.dir = "/Volumes/HP-SOC-DOOR/social_doors/derivatives/rsa-bw_runs-fb_only/")
 ```
 
 

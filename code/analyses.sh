@@ -56,8 +56,8 @@ done
 
 for subj in "${subj_list[@]}"; do 
     for task in mdoors social; do
-        for contrast in posVneg_win_run-1 positive_winVlos_run-1 negative_winVlos_run-1 all_winVlos_run-1 \
-                        posVneg_win_run-2 positive_winVlos_run-2 negative_winVlos_run-2 all_winVlos_run-2; do
+        for contrast in positive_win_run-1 positive_loss_run-1 negative_win_run-1 negative_loss_run-1 \
+                        positive_win_run-2 positive_loss_run-2 negative_win_run-2 negative_loss_run-2 ; do
             python code/suit_normalization.py ${subj} ${task} ${contrast}
         done
     done
