@@ -110,7 +110,7 @@ In this analysis, we will directly test whether an ROI represents positive and n
 This analysis was completed using the Nilearn python package. Here we will only conduct second level ROI statistics and visualizations. 
 ```{r}
 all_sim_vcr <- read.csv(file='posnegwin_similarity.csv', header = TRUE)
-all_sim_vcr
+head(all_sim_vcr)
 ```
 
 
@@ -145,6 +145,14 @@ all_sim_vcr_mdoors_rois$z <- fisherz(all_sim_vcr_mdoors_rois$r)
 all_sim_vcr_social_rois$z <- fisherz(all_sim_vcr_social_rois$r)
 
 ```
+
+
+### Load pattern data
+This will be used to calculate noise ceilings for each ROI
+```{r}
+
+```
+
 
 
 
@@ -526,6 +534,11 @@ p + geom_text(aes(label = Sig_adjust, y = 0.1), size = 6,
 ggsave('rsa_vcr_social.png')
 ```
 
+```{r}
+noise_ceils <- read.csv('noise_ceilings.csv')
+head(noise_ceils)
+```
+
 
 
 ```{r}
@@ -542,6 +555,18 @@ p1 <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi',
               annotations = c('***','**'), y_position = c(0.14,0.16),
                             tip_length = 0, textsize = 6,
                             vjust=0.3) + 
+  geom_segment(aes(x=0.65, xend=1.00, y=noise_ceils$Noise[4], yend=noise_ceils$Noise[4]), 
+               colour="grey", linetype = 'dashed') + 
+  geom_segment(aes(x=1.05, xend=1.35, y=noise_ceils$Noise[3], yend=noise_ceils$Noise[3]), 
+               colour="grey", linetype = 'dashed') + 
+  geom_segment(aes(x=1.65, xend=1.95, y=noise_ceils$Noise[2], yend=noise_ceils$Noise[2]), 
+               colour="grey", linetype = 'dashed') + 
+  geom_segment(aes(x=2.05, xend=2.35, y=noise_ceils$Noise[1], yend=noise_ceils$Noise[1]), 
+               colour="grey", linetype = 'dashed') +
+  geom_segment(aes(x=2.65, xend=2.95, y=noise_ceils$Noise[6], yend=noise_ceils$Noise[6]), 
+               colour="grey", linetype = 'dashed') + 
+  geom_segment(aes(x=3.05, xend=3.35, y=noise_ceils$Noise[5], yend=noise_ceils$Noise[5]), 
+               colour="grey", linetype = 'dashed') + 
   theme(axis.text.x = element_text(vjust = 0.5), legend.position='bottom') + 
   xlab("\nRegions of Interests") + ylab("Spearman's Rho") + 
   ggtitle("A) Monetary Task") + 
@@ -552,6 +577,12 @@ p1 <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi',
                       labels=c("Young Adult", "Adolescent")) + 
   guides(color = guide_legend(override.aes = list(fill = outline.colors)))
 
+#xpos<- c(0.5,1,1.5,2,2.5,3)
+
+#for (i in c(1,6)) {
+#  p1 <- p1 + geom_segment(aes(x=i/4, xend=i/4+0.5, y=noise_ceils$Noise[i], yend=noise_ceils$Noise[i]), 
+#               colour="grey", linetype = 'dashed')
+#}
 
 
 p2 <- ggbarplot(all_sim_vcr_social_rois, x = 'roi', 
@@ -567,6 +598,18 @@ p2 <- ggbarplot(all_sim_vcr_social_rois, x = 'roi',
               annotations = c('*','***','***'), y_position = c(0.14,0.16,0.18),
                             tip_length = 0, textsize = 6,
                             vjust=0.2) + 
+  geom_segment(aes(x=0.65, xend=1.00, y=noise_ceils$Noise[10], yend=noise_ceils$Noise[10]), 
+               colour="grey", linetype = 'dashed') + 
+  geom_segment(aes(x=1.05, xend=1.35, y=noise_ceils$Noise[9], yend=noise_ceils$Noise[9]), 
+               colour="grey", linetype = 'dashed') + 
+  geom_segment(aes(x=1.65, xend=1.95, y=noise_ceils$Noise[8], yend=noise_ceils$Noise[8]), 
+               colour="grey", linetype = 'dashed') + 
+  geom_segment(aes(x=2.05, xend=2.35, y=noise_ceils$Noise[7], yend=noise_ceils$Noise[7]), 
+               colour="grey", linetype = 'dashed') + 
+  geom_segment(aes(x=2.65, xend=2.95, y=noise_ceils$Noise[12], yend=noise_ceils$Noise[12]), 
+               colour="grey", linetype = 'dashed') + 
+  geom_segment(aes(x=3.05, xend=3.35, y=noise_ceils$Noise[11], yend=noise_ceils$Noise[11]), 
+               colour="grey", linetype = 'dashed') + 
   theme(axis.text.x = element_text(vjust = 0.5), legend.position='Bottom') + 
   theme(axis.text.y=element_blank(), axis.title.y = element_blank()) + 
   xlab("\nRegions of Interests") +
