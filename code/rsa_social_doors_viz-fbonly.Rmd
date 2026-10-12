@@ -568,7 +568,7 @@ p1 <- ggbarplot(all_sim_vcr_mdoors_rois, x = 'roi',
   geom_segment(aes(x=3.05, xend=3.35, y=noise_ceils$Noise[5], yend=noise_ceils$Noise[5]), 
                colour="grey", linetype = 'dashed') + 
   theme(axis.text.x = element_text(vjust = 0.5), legend.position='bottom') + 
-  xlab("\nRegions of Interests") + ylab("Spearman's Rho") + 
+  xlab("\nRegions of Interests") + ylab("Pearson's r") + 
   ggtitle("A) Monetary Task") + 
   scale_x_discrete(labels=hyp_rois_names) + 
   scale_fill_manual(values=fill.colors) + 

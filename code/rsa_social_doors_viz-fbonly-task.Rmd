@@ -62,9 +62,9 @@ n_conds <- length(conds)
 
 ### Define Hypothesized ROIs
 ```{r}
-hyp_rois <- c('region08', 'region02',
+hyp_rois <- c('region02', 'region08',
               'striatum_ventral')
-hyp_rois_names <- c('CB Region 8','CB Region 2',
+hyp_rois_names <- c('CB Region 2','CB Region 8',
                     'Ventral Striatum')
 
 #hyp_rois <- c('TPJ_b-social', 'dmPFC_b-social',
@@ -198,7 +198,7 @@ mass_twos_t_tests <- function(df) {
     temp_df <- df[df$roi == hyp_rois[n],]
     group1 <- temp_df[temp_df$task == 'mdoors',]$z
     group2 <- temp_df[temp_df$task == 'social',]$z
-    temp_ttest <- t.test(group1, group2)
+    temp_ttest <- t.test(group1, group2, paired=TRUE)
     
     df.t_tests[n,]$roi <- hyp_rois[n]
     df.t_tests[n,]$Statistic <- temp_ttest$statistic
@@ -285,7 +285,17 @@ all_sim_vcr_social_rois.t_tests <- mass_t_tests(all_sim_vcr_social_rois)
 anova_mod_sim_vcr <- aov(r ~ roi*task, data=all_sim_vcr_rois)
 report(anova_mod_sim_vcr)
 ```
+```{r}
+res <- anova_test(data = all_sim_vcr_rois, dv = r, wid = subj,
+                  within = c(task, roi), effect.size = "pes")  # partial eta squared
+tab <- as.data.frame(get_anova_table(res, correction = "none"))
 
+p_fmt <- ifelse(tab$p < .001, "< .001", sprintf("= %.3f", tab$p))
+
+cat(sprintf("%s: F(%.2f, %.2f) = %.2f, p %s, partial eta squared = %.3f.\n",
+            tab$Effect, tab$DFn, tab$DFd, tab$F, p_fmt, tab$pes),
+    sep = "")
+```
 
 
 ```{r}
@@ -339,6 +349,16 @@ bar_fill_one_sample <- function(df, g1.t_tests, g2.t_tests) {
 } 
 ```
 
+```{r}
+noise_ceils <- read.csv('noise_ceilings.csv')
+#head(noise_ceils)
+
+noise_ceils <- noise_ceils %>%
+   group_by(Task, ROI) %>% 
+   summarise_at(vars("Noise"), mean)
+head(noise_ceils)
+
+```
 
 ```{r}
 # Rearrange x-axis labels
@@ -368,6 +388,18 @@ p + geom_text(aes(label = Sig_adjust, y = 0.17), size = 6,
               annotations = c('***','***'), y_position = c(0.20,0.18),
                             tip_length = 0, textsize = 6,
                             vjust=0.5) + 
+  geom_segment(aes(x=0.65, xend=1.00, y=noise_ceils$Noise[1], yend=noise_ceils$Noise[1]), 
+               colour="grey", linetype = 'dashed') + 
+  geom_segment(aes(x=1.05, xend=1.35, y=noise_ceils$Noise[4], yend=noise_ceils$Noise[4]), 
+               colour="grey", linetype = 'dashed') + 
+  geom_segment(aes(x=1.65, xend=1.95, y=noise_ceils$Noise[2], yend=noise_ceils$Noise[2]), 
+               colour="grey", linetype = 'dashed') + 
+  geom_segment(aes(x=2.05, xend=2.35, y=noise_ceils$Noise[5], yend=noise_ceils$Noise[5]), 
+               colour="grey", linetype = 'dashed') +
+  geom_segment(aes(x=2.65, xend=2.95, y=noise_ceils$Noise[3], yend=noise_ceils$Noise[3]), 
+               colour="grey", linetype = 'dashed') + 
+  geom_segment(aes(x=3.05, xend=3.35, y=noise_ceils$Noise[6], yend=noise_ceils$Noise[6]), 
+               colour="grey", linetype = 'dashed') + 
   theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
   xlab("Regions of Interests") + ylab("Positive and Negative Win Similarity") + 
   scale_x_discrete(labels=hyp_rois_names) + 

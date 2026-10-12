@@ -20,11 +20,13 @@ library(ggpubr)
 library(kableExtra)
 library(ggplot2)
 library(report)
+library(rstatix)
+
 
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
 
-opts_knit$set(root.dir = "/Users/haroonpopal/OneDrive - Temple University/olson_lab/projects/social_doors/derivatives/univariate_roi/")
+opts_knit$set(root.dir = "/Volumes/HP-SOC-DOOR/social_doors/derivatives/univariate_roi/")
 ```
 
 
@@ -229,6 +231,18 @@ report(model_allg_pos)
 ```
 
 
+```{r}
+res <- anova_test(data = allg_data_pos, dv = contrast_mean, wid = subject_id,
+                  within = c(task, roi), effect.size = "pes")  # partial eta squared
+tab <- as.data.frame(get_anova_table(res, correction = 'none'))
+
+p_fmt <- ifelse(tab$p < .001, "< .001", sprintf("= %.3f", tab$p))
+
+cat(sprintf("%s: F(%.2f, %.2f) = %.2f, p %s, partial eta squared = %.3f.\n",
+            tab$Effect, tab$DFn, tab$DFd, tab$F, p_fmt, tab$pes),
+    sep = "")
+```
+
 
 ```{r}
 bar_fill_one_sample <- function(df, g1.t_tests, g2.t_tests) {
@@ -353,6 +367,18 @@ model_allg_all <- aov(contrast_mean ~ task*roi,
 report(model_allg_all)
 ```
 
+```{r}
+res <- anova_test(data = allg_data_all, dv = contrast_mean, wid = subject_id,
+                  within = c(task, roi), effect.size = "pes")  # partial eta squared
+tab <- as.data.frame(get_anova_table(res, correction = "none"))
+
+p_fmt <- ifelse(tab$p < .001, "< .001", sprintf("= %.3f", tab$p))
+
+cat(sprintf("%s: F(%.2f, %.2f) = %.2f, p %s, partial eta squared = %.3f.\n",
+            tab$Effect, tab$DFn, tab$DFd, tab$F, p_fmt, tab$pes),
+    sep = "")
+```
+
 
 ```{r}
 allg_data_all.t_tests <- mass_twos_t_tests(allg_data_all)
@@ -381,6 +407,117 @@ p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
   guides(color = guide_legend(override.aes = list(fill = outline.colors)))
 
 ggsave('../univariate_roi/allg_all_winVlos_anova_bar.png')
+```
+
+
+
+
+# Positive Wins vs Negative Wins
+
+```{r}
+# Filter data
+allg_data_win <- all_sub_roi_con[all_sub_roi_con$contrast %in% 'posVneg_win', ]
+allg_data_win <- allg_data_win[allg_data_win$roi %in% hyp_rois, ]
+
+allg_data_win_mdoors <- allg_data_win[allg_data_win$task %in% 'mdoors', ]
+allg_data_win_social <- allg_data_win[allg_data_win$task %in% 'social', ]
+```
+
+
+## Monetary Task
+```{r}
+# Conduct t-tests
+allg_data_win_mdoors.t_tests <- mass_t_tests(allg_data_win_mdoors)
+
+
+# Plot
+p <- ggbarplot(allg_data_win_mdoors, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se',
+               position = position_dodge(0.8))
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_win_mdoors.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  xlab("Regions of Interests") + ylab("Mean Response (positive wins > negative wins)") + 
+  scale_x_discrete(labels=hyp_rois_names)
+
+ggsave('../univariate_roi/allg_posVneg_win_ttest_bar_mdoors.png')
+```
+
+## Social Task
+
+```{r}
+# T-test
+allg_data_win_social.t_tests <- mass_t_tests(allg_data_win_social)
+
+
+# Plot
+p <- ggbarplot(allg_data_win_social, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se',
+               position = position_dodge(0.8))
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_win_social.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5)) + 
+  xlab("Regions of Interests") + ylab("Mean Response (positive wins > negative wins)") + 
+  scale_x_discrete(labels=hyp_rois_names)
+
+ggsave('../univariate_roi/allg_posVneg_win_ttest_bar_social.png')
+```
+
+
+
+## Task Differences
+
+```{r}
+# ANOVA
+model_allg_win <- aov(contrast_mean ~ task * roi + Error(subject_id/(roi)),
+                           data = allg_data_win)
+report(model_allg_win)
+```
+
+
+
+
+```{r}
+res <- anova_test(data = allg_data_win, dv = contrast_mean, wid = subject_id,
+                  within = c(task, roi), effect.size = "pes")  # partial eta squared
+tab <- as.data.frame(get_anova_table(res, correction = "none"))
+
+p_fmt <- ifelse(tab$p < .001, "< .001", sprintf("= %.3f", tab$p))
+
+cat(sprintf("%s: F(%.2f, %.2f) = %.2f, p %s, partial eta squared = %.3f.\n",
+            tab$Effect, tab$DFn, tab$DFd, tab$F, p_fmt, tab$pes),
+    sep = "")
+```
+
+
+
+```{r}
+allg_data_win.t_tests <- mass_twos_t_tests(allg_data_win)
+
+allg_data_win <- bar_fill_one_sample(allg_data_win, 
+                                            allg_data_win_mdoors.t_tests,
+                                            allg_data_win_social.t_tests)
+
+fill.colors <- c(mdoors_not = "#FFFFFF", mdoors_sig = "#7fb8d8", social_not ="#FFFFFF", social_sig = "#eaae7f")
+outline.colors <- c("#0072B2", "#D55E00")
+
+# Plot
+p <- ggbarplot(allg_data_win, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "task"),
+               group = 'task', color='task', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color')
+p + geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_win.t_tests) + 
+  theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
+  xlab("Regions of Interests") + ylab("Mean Response (positive wins > negative wins)") + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Task', values = outline.colors, 
+                      labels=c("Monetary", "Social")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+ggsave('../univariate_roi/allg_posVneg_win_anova_bar.png')
 ```
 
 
@@ -439,6 +576,55 @@ ggsave('../univariate_roi/allp_anova_bar.png')
 
 
 
+```{r, fig.height=8, fig.width=8}
+# Plot
+p1 <- ggbarplot(allg_data_pos, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "task"),
+               group = 'task', color='task', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color') + 
+  geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_pos.t_tests) + 
+  #theme(axis.text.x = element_text(angle =90, vjust = 0.5), legend.position='right') + 
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(),
+        plot.title = element_text(face='bold')) + 
+  #xlab("\n") + 
+  ylab("Mean Response") + 
+  ggtitle('A. Positive Correct > Positive Incorrect Contrast') + 
+  #scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Task', values = outline.colors, 
+                      labels=c("Monetary", "Social")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+
+p2 <- ggbarplot(allg_data_win, x = 'roi', 
+               y = 'contrast_mean', add = 'mean_se', add.params = list(group = "task"),
+               group = 'task', color='task', position = position_dodge(0.8), 
+               palette = outline.colors, fill = 'plot_color') +
+  geom_text(aes(label = Sig_adjust, y = 0.3), size = 6,
+              data = allg_data_win.t_tests) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5), legend.position='right',
+        plot.title = element_text(face='bold')) + 
+  xlab("Regions of Interests") + ylab("Mean Response") + 
+  ggtitle('B. Positive Correct > Negative Correct Contrast') + 
+  scale_x_discrete(labels=hyp_rois_names) + 
+  scale_fill_manual(values=fill.colors) + 
+  guides(fill = FALSE) + 
+  scale_colour_manual(name = 'Task', values = outline.colors, 
+                      labels=c("Monetary", "Social")) + 
+  guides(color = guide_legend(override.aes = list(fill = outline.colors)))
+
+
+multi_plot <- ggarrange(p1, p2, nrow = 2, common.legend = TRUE, legend = 'right',
+          heights = c(5,6.75), align = 'v') 
+
+annotate_figure(multi_plot, top = text_grob("ROI Responses for Reward Tasks\n", 
+               face = "bold", size = 18))
+
+
+ggsave('../univariate_roi/allp_anova_bar.png')
+```
 
 
 
@@ -454,17 +640,17 @@ allg_data_pos_mdoors.t_tests$contrast <- 'positive'
 allg_data_pos_social.t_tests$task <- 'social'
 allg_data_pos_social.t_tests$contrast <- 'positive'
 
-allg_data_all_mdoors.t_tests$task <- 'mdoors'
-allg_data_all_mdoors.t_tests$contrast <- 'all'
+allg_data_win_mdoors.t_tests$task <- 'mdoors'
+allg_data_win_mdoors.t_tests$contrast <- 'correct'
 
-allg_data_all_social.t_tests$task <- 'social'
-allg_data_all_social.t_tests$contrast <- 'all'
+allg_data_win_social.t_tests$task <- 'social'
+allg_data_win_social.t_tests$contrast <- 'correct'
 
 
 combined_ttests <- rbind(allg_data_pos_mdoors.t_tests,
                          allg_data_pos_social.t_tests,
-                         allg_data_all_mdoors.t_tests,
-                         allg_data_all_social.t_tests)
+                         allg_data_win_mdoors.t_tests,
+                         allg_data_win_social.t_tests)
 
 ```
 
